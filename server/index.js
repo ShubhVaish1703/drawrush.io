@@ -28,6 +28,7 @@ const createRoom = (hostId, hostName) => {
         host: hostId,
         players: [{ id: hostId, name: hostName, score: 0 }],
         maxPlayers: 8,
+        messages:[],//msg store here
         currentDrawer: null,
         currentWord: null,
         gameStarted: false,
@@ -90,9 +91,13 @@ io.on("connection", (socket) => {
 
         // Send existing drawing to new player
         socket.emit("load-drawing", room.drawingData);
+        //send old messages
+        socket.emit("chat-history", room.messages);
 
         console.log(`${playerName} joined room ${code}`);
     });
+
+    //fetch player
 
     socket.on("fetch-players", ({ roomId }) => {
         const room = rooms.get(roomId);
@@ -113,7 +118,42 @@ io.on("connection", (socket) => {
         }
 
         socket.emit("all-players", { players: room.players });
-    })
+    });
+
+   //  FETCH CHAT (REFRESH SUPPORT) 
+    socket.on("fetch-chat", ({ roomId }) => {
+        const room = rooms.get(roomId);
+        if (!room) return;
+
+        socket.emit("chat-history", room.messages); // refresh chat
+    });
+
+    // ** handle chat messages**
+    socket.on("send-message", ({ roomCode, message, senderName }) => {
+        const room = rooms.get(roomCode);
+        if (!room) return;
+
+        // Create message object
+        const msgData = {
+            message,
+            senderName,
+            time: Date.now(),
+        };
+        // Save message
+    room.messages.push(msgData);
+     
+        // Broadcast to all players in the room, including sender
+        io.to(roomCode).emit("receive-message", msgData);
+
+        // console.log(`[${roomCode}] ${senderName}: ${message}`);
+    });
+
+    //  handle disconnect
+    socket.on("disconnect", () => {
+        console.log("User disconnected: ", socket.id);
+        // Remove from rooms if needed
+    });
+
 
 });
 
