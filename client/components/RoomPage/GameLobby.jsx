@@ -12,7 +12,8 @@ import PlayerCard from "./PlayerCard";
 
 const GameLobby = ({ roomId, playerName }) => { // Added playerName prop
     const [players, setPlayers] = useState([]);
-    const socket = useRef(initSocket()).current; // Keep same socket instance
+    // const socket = useRef(initSocket()).current; // Keep same socket instance
+    const socket = initSocket();
     const [username, setUsername] = useState(playerName || ""); // Initialize username
     const [messages, setMessages] = useState([]);
     const [messageInput, setMessageInput] = useState("");
