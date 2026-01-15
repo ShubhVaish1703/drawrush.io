@@ -1,4 +1,5 @@
 import { Roboto } from "next/font/google";
+import ToasterProvider from "@/providers/ToasterProvider";
 import "./globals.css";
 
 const roboto = Roboto({
@@ -17,6 +18,7 @@ export default function RootLayout({ children }) {
       <body
         className={`${roboto.variable} antialiased`}
       >
+        <ToasterProvider />
         {children}
       </body>
     </html>

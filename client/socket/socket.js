@@ -9,15 +9,6 @@ export const initSocket = () => {
             reconnection: true,
             reconnectionAttempts: 5,
         });
-
-        // console.log("Socket initialized");
     }
     return socket;
 };
-
-// export const getSocket = () => {
-//     if (!socket) {
-//         throw new Error("Socket not initialized. Call initSocket() first.");
-//     }
-//     return socket;
-// };

@@ -9,20 +9,80 @@ import {
 import MessageBox from "./MessageBox";
 import { initSocket } from "@/socket/socket";
 import PlayerCard from "./PlayerCard";
+import Header from "./Header";
 
-const GameLobby = ({ roomId, playerName }) => { // Added playerName prop
+const GameLobby = ({ roomId }) => { // Added playerName prop
     const [players, setPlayers] = useState([]);
-    // const socket = useRef(initSocket()).current; // Keep same socket instance
     const socket = initSocket();
-    const [username, setUsername] = useState(playerName || ""); // Initialize username
+    const [currentPlayer, setCurrentPlayer] = useState(null);
     const [messages, setMessages] = useState([]);
     const [messageInput, setMessageInput] = useState("");
     const [hostId, setHostId] = useState();
+    const [isReconnecting, setIsReconnecting] = useState(true);
 
     const messagesEndRef = useRef(null); // For auto-scrolling chat
 
-    //chat history
+    useEffect(() => {
+        // Handle reconnection on mount
+        const storedPlayer = sessionStorage.getItem("player");
+        const storedRoomId = sessionStorage.getItem("roomId");
 
+        if (storedPlayer && storedRoomId === roomId) {
+            const player = JSON.parse(storedPlayer);
+            console.log(player);
+            setCurrentPlayer(player);
+
+            // Reconnect to room with existing playerId
+            socket.emit("reconnect-room", {
+                code: roomId,
+                playerId: player.id
+            });
+        } else {
+            // This is a fresh join (shouldn't happen in GameLobby, but handle it)
+            setIsReconnecting(false);
+        }
+
+        // Listen for reconnection success
+        const handleRoomReconnected = ({ room, player }) => {
+            setCurrentPlayer(player);
+            setPlayers(room.players);
+            setHostId(room.host);
+            setMessages(room.messages || []);
+            setIsReconnecting(false);
+
+            // Update sessionStorage with latest data
+            sessionStorage.setItem("player", JSON.stringify(player));
+            sessionStorage.setItem("roomId", roomId);
+        };
+
+        socket.on("room-reconnected", handleRoomReconnected);
+
+        // Cleanup
+        return () => {
+            socket.off("room-reconnected", handleRoomReconnected);
+        };
+    }, [roomId]);
+
+    // Fetch players and chat on mount
+    useEffect(() => {
+        if (isReconnecting) return;
+
+        socket.emit("fetch-players", { roomId });
+        socket.emit("fetch-chat", { roomId });
+
+        const handleAllPlayers = ({ players, hostId }) => {
+            setPlayers(players);
+            setHostId(hostId);
+        };
+
+        socket.on("all-players", handleAllPlayers);
+
+        return () => {
+            socket.off("all-players", handleAllPlayers);
+        };
+    }, [roomId, isReconnecting]);
+
+    // Chat history listener
     useEffect(() => {
         const handleChatHistory = (msgs) => {
             setMessages(msgs);
@@ -33,36 +93,9 @@ const GameLobby = ({ roomId, playerName }) => { // Added playerName prop
         return () => {
             socket.off("chat-history", handleChatHistory);
         };
-    }, [socket]);
+    }, []);
 
-    // Scroll chat to bottom whenever messages change
-    useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [messages]);
-
-    useEffect(() => {
-        // ask server for players
-        socket.emit("fetch-players", { roomId });
-        socket.emit("fetch-chat", { roomId });
-
-        const handleAllPlayers = ({ players, hostId }) => {
-            setPlayers(players);
-            setHostId(hostId);
-            // Set username if not already set
-            if (!username) {
-                const me = players.find(p => p.id === socket.id);
-                if (me) setUsername(me.name);
-            }
-        };
-
-        socket.on("all-players", handleAllPlayers);
-
-        return () => {
-            socket.off("all-players", handleAllPlayers);
-        };
-    }, [roomId]);
-
-    //player joined listener
+    // Player joined listener
     useEffect(() => {
         const handlePlayerJoined = ({ players }) => {
             setPlayers(players);
@@ -73,9 +106,9 @@ const GameLobby = ({ roomId, playerName }) => { // Added playerName prop
         return () => {
             socket.off("player-joined", handlePlayerJoined);
         };
-    }, [socket]);
+    }, []);
 
-    //receive messages
+    // Receive messages listener
     useEffect(() => {
         const handleReceiveMessage = (data) => {
             setMessages((prev) => [...prev, data]);
@@ -86,7 +119,26 @@ const GameLobby = ({ roomId, playerName }) => { // Added playerName prop
         return () => {
             socket.off("receive-message", handleReceiveMessage);
         };
-    }, [socket]);
+    }, []);
+
+    // Auto-scroll chat to bottom
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [messages]);
+
+    // Handle error
+    useEffect(() => {
+        const handleError = ({ message }) => {
+            console.error("Socket error:", message);
+            alert(message);
+        };
+
+        socket.on("error", handleError);
+
+        return () => {
+            socket.off("error", handleError);
+        };
+    }, []);
 
     //sending msg to server 
     const handleSendMessage = () => {
@@ -95,12 +147,11 @@ const GameLobby = ({ roomId, playerName }) => { // Added playerName prop
         // Create message object
         const msgData = {
             roomCode: roomId,
-            message: messageInput,
-            senderName: username || "Guest",
+            message: messageInput.trim(),
+            senderName: currentPlayer?.name || "Guest",
         };
         //send to server
         socket.emit("send-message", msgData); // Send to server
-
         setMessageInput("");
     };
 
@@ -109,6 +160,15 @@ const GameLobby = ({ roomId, playerName }) => { // Added playerName prop
             handleSendMessage();
         }
     };
+
+    // Show loading state while reconnecting
+    if (isReconnecting) {
+        return (
+            <div className="h-screen flex items-center justify-center bg-slate-900">
+                <div className="text-white text-xl">Reconnecting to room...</div>
+            </div>
+        );
+    }
 
     return (
         <div
@@ -120,12 +180,7 @@ const GameLobby = ({ roomId, playerName }) => { // Added playerName prop
 
             <div className="relative flex flex-col h-full gap-4">
                 {/* HEADER */}
-                <div className="border border-white/30 rounded-xl bg-white/10 backdrop-blur-md p-4 shadow-2xl">
-                    <h1 className="text-3xl sm:text-5xl font-bold text-center  bg-linear-to-r from-purple-600 via-pink-500 to-pink-600 bg-clip-text text-transparent">
-                        DRAWRUSH
-                    </h1>
-                    <p className="text-center text-white/70 text-sm mt-1 font-semibold">Room ID: {roomId}</p>
-                </div>
+                <Header roomId={roomId} />
 
                 {/* MAIN CONTENT - min-h-0 is crucial for flex children with overflow */}
                 <div className="flex gap-4 flex-1 min-h-0">
@@ -145,14 +200,22 @@ const GameLobby = ({ roomId, playerName }) => { // Added playerName prop
                         {/* Players List - scrollable */}
                         <div className="flex-1 overflow-y-auto p-3 space-y-2">
                             {players.map((player) => (
-                                <PlayerCard key={player.id} player={player} hostId={hostId} />
+                                <PlayerCard
+                                    key={player.id}
+                                    player={player}
+                                    hostId={hostId}
+                                    isCurrentUser={currentPlayer?.id === player.id}
+                                />
                             ))}
                         </div>
 
                         {/* Start Game Button */}
                         <div className="p-3 border-t border-white/20 bg-slate-900/50">
-                            <button className="w-full cursor-pointer bg-linear-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-3 rounded-lg transition-all shadow-lg hover:shadow-xl">
-                                Start Game
+                            <button
+                                className="w-full cursor-pointer bg-linear-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-3 rounded-lg transition-all shadow-lg hover:shadow-xl"
+                                disabled={currentPlayer?.id !== hostId}
+                            >
+                                {currentPlayer?.id === hostId ? 'Start Game' : 'Waiting for host...'}
                             </button>
                         </div>
                     </div>
@@ -181,11 +244,13 @@ const GameLobby = ({ roomId, playerName }) => { // Added playerName prop
                         <div className="flex-1 overflow-y-auto p-3 space-y-3 min-h-0">
                             {messages.map((msg, index) => (
                                 <MessageBox
-                                    key={index}
+                                    key={`${msg.time}-${index}`}
                                     SenderName={msg.senderName}
                                     message={msg.message}
+                                    isOwnMessage={msg.senderName === currentPlayer?.name}
                                 />
                             ))}
+                            <div ref={messagesEndRef} />
                         </div>
 
                         {/* Input - fixed at bottom */}

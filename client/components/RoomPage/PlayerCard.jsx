@@ -4,16 +4,9 @@ import { bottts } from '@dicebear/collection';
 import Image from 'next/image';
 import { Crown } from 'lucide-react';
 import { useEffect, useState } from "react";
+import { capitalizeFirst } from '@/utils/utils';
 
-const PlayerCard = ({ player, hostId }) => {
-    const [storedPlayer, setStoredPlayer] = useState({});
-    useEffect(() => {
-        const _storedPlayer = sessionStorage.getItem("player");
-        if (_storedPlayer) {
-            setStoredPlayer(JSON.parse(_storedPlayer));
-        }
-    }, []);
-
+const PlayerCard = ({ player, hostId, isCurrentUser }) => {
     const avatar = createAvatar(bottts, {
         seed: player.name,
         backgroundColor: ["b6e3f4", "c0aede", "d1d4f9"]
@@ -36,9 +29,9 @@ const PlayerCard = ({ player, hostId }) => {
                             alt={player.name}
                         />
                     </div>
-                    <span className="text-white font-semibold">{player.name}</span>
+                    <span className="text-white font-semibold">{capitalizeFirst(player.name)}</span>
                     {
-                        storedPlayer?.id === player.id &&
+                        isCurrentUser &&
                         <span className="text-white font-semibold bg-slate-800 text-[10px] rounded-full px-2 py-1">YOU</span>
                     }
                     {
