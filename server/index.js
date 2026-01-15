@@ -22,12 +22,17 @@ const generateRoomCode = () => {
 };
 
 // Create new room structure
-const createRoom = (hostName, playerId) => {
+const createRoom = (hostName, playerId, socketId) => {
     const code = generateRoomCode();
     return {
         code,
         host: playerId,
-        players: [{ id: playerId, name: hostName, score: 0 }],
+        players: [{
+            id: playerId,
+            socketId: socketId,
+            name: hostName,
+            score: 0
+        }],
         maxPlayers: 8,
         messages: [],//msg store here
         currentDrawer: null,
@@ -45,7 +50,7 @@ io.on("connection", (socket) => {
     // Create a new room
     socket.on("create-room", ({ playerName }) => {
         const playerId = uuidv4();
-        const room = createRoom(playerName, playerId);
+        const room = createRoom(playerName, playerId, socket.id);
 
         rooms.set(room.code, room);
         socket.join(room.code);
@@ -80,9 +85,11 @@ io.on("connection", (socket) => {
         const playerId = uuidv4();
         const player = {
             id: playerId,
+            socketId: socket.id,
             name: playerName,
             score: 0,
         }
+
         // Add player to room
         room.players.push(player);
 
@@ -94,7 +101,7 @@ io.on("connection", (socket) => {
 
         // Notify all players in room
         io.to(code).emit("player-joined", {
-            player: { id: playerId, name: playerName, score: 0 },
+            player: player,
             players: room.players,
         });
 
@@ -106,8 +113,45 @@ io.on("connection", (socket) => {
         console.log(`${playerName} joined room ${code}`);
     });
 
-    //fetch player
+    // ** RECONNECT TO ROOM (for page refresh) **
+    socket.on("reconnect-room", ({ code, playerId }) => {
+        const room = rooms.get(code);
 
+        if (!room) {
+            socket.emit("error", { message: "Room not found" });
+            return;
+        }
+
+        // Find the player by their UUID
+        const playerIndex = room.players.findIndex(p => p.id === playerId);
+        if (playerIndex === -1) {
+            socket.emit("error", { message: "Player not found in room" });
+            return;
+        }
+
+        // Update the socketId for this player
+        room.players[playerIndex].socketId = socket.id;
+        const player = room.players[playerIndex];
+
+        // Join the room again
+        socket.join(code);
+
+        // Send room data back
+        socket.emit("room-reconnected", {
+            room,
+            player,
+        });
+
+        // Send chat history
+        socket.emit("chat-history", room.messages);
+
+        // Send existing drawing
+        socket.emit("load-drawing", room.drawingData);
+
+        console.log(`${player.name} reconnected to room ${code}`);
+    })
+
+    // Fetch players
     socket.on("fetch-players", ({ roomId }) => {
         const room = rooms.get(roomId);
 
@@ -116,17 +160,10 @@ io.on("connection", (socket) => {
             return;
         }
 
-        if (room.players.length >= room.maxPlayers) {
-            socket.emit("error", { message: "Room is full" });
-            return;
-        }
-
-        if (room.gameStarted) {
-            socket.emit("error", { message: "Game already started" });
-            return;
-        }
-
-        socket.emit("all-players", { players: room.players, hostId: room.host });
+        socket.emit("all-players", {
+            players: room.players,
+            hostId: room.host
+        });
     });
 
     //  FETCH CHAT (REFRESH SUPPORT) 
@@ -137,7 +174,7 @@ io.on("connection", (socket) => {
         socket.emit("chat-history", room.messages); // refresh chat
     });
 
-    // ** handle chat messages**
+    // handle chat messages
     socket.on("send-message", ({ roomCode, message, senderName }) => {
         const room = rooms.get(roomCode);
         if (!room) return;
@@ -153,16 +190,23 @@ io.on("connection", (socket) => {
 
         // Broadcast to all players in the room, including sender
         io.to(roomCode).emit("receive-message", msgData);
-
-        // console.log(`[${roomCode}] ${senderName}: ${message}`);
     });
 
-    //  handle disconnect
+    // Handle disconnect
     socket.on("disconnect", () => {
         console.log("User disconnected: ", socket.id);
-        // Remove from rooms if needed
-    });
 
+        // Find and update player status (mark as disconnected but don't remove)
+        for (const [code, room] of rooms.entries()) {
+            const player = room.players.find(p => p.socketId === socket.id);
+            if (player) {
+                console.log(`${player.name} disconnected from room ${code}`);
+                // Optionally: You can add a 'connected' flag here
+                // player.connected = false;
+                break;
+            }
+        }
+    });
 
 });
 

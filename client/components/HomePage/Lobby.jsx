@@ -19,17 +19,25 @@ export default function DrawRush() {
 
         socket.on("room-created", ({ code, player }) => {
             sessionStorage.setItem("player", JSON.stringify(player));
+            sessionStorage.setItem("roomId", code);
             router.push(`/room/${code}`);
         });
 
         socket.on("room-joined", ({ room, player }) => {
-            sessionStorage.setItem("player", JSON.stringify(player))
+            sessionStorage.setItem("player", JSON.stringify(player));
+            sessionStorage.setItem("roomId", room.code);
             router.push(`/room/${room.code}`);
+        });
+
+        // Handle errors
+        socket.on("error", ({ message }) => {
+            alert(message);
         });
 
         return () => {
             socket.off("room-created");
             socket.off("room-joined");
+            socket.off("error");
             socket.off("connect");
         };
     }, []);
