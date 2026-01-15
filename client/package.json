@@ -9,15 +9,20 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "next": "16.1.1",
+    "@dicebear/collection": "^9.2.4",
+    "@dicebear/core": "^9.2.4",
+    "lucide-react": "^0.562.0",
+    "next": "16.1.2",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "socket.io-client": "^4.8.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/react": "^19.2.8",
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9",
-    "eslint-config-next": "16.1.1",
+    "eslint-config-next": "16.1.2",
     "tailwindcss": "^4"
   }
 }
