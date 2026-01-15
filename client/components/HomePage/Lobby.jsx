@@ -17,11 +17,13 @@ export default function DrawRush() {
             // console.log("Connected:", socket.id);
         });
 
-        socket.on("room-created", ({ code }) => {
+        socket.on("room-created", ({ code, player }) => {
+            sessionStorage.setItem("player", JSON.stringify(player));
             router.push(`/room/${code}`);
         });
 
-        socket.on("room-joined", ({ room }) => {
+        socket.on("room-joined", ({ room, player }) => {
+            sessionStorage.setItem("player", JSON.stringify(player))
             router.push(`/room/${room.code}`);
         });
 

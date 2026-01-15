@@ -1,6 +1,7 @@
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
+const { v4: uuidv4 } = require("uuid");
 
 const app = express();
 const server = http.createServer(app);
@@ -21,12 +22,12 @@ const generateRoomCode = () => {
 };
 
 // Create new room structure
-const createRoom = (hostId, hostName) => {
+const createRoom = (hostName, playerId) => {
     const code = generateRoomCode();
     return {
         code,
-        host: hostId,
-        players: [{ id: hostId, name: hostName, score: 0 }],
+        host: playerId,
+        players: [{ id: playerId, name: hostName, score: 0 }],
         maxPlayers: 8,
         messages: [],//msg store here
         currentDrawer: null,
@@ -43,12 +44,15 @@ io.on("connection", (socket) => {
 
     // Create a new room
     socket.on("create-room", ({ playerName }) => {
-        const room = createRoom(socket.id, playerName);
+        const playerId = uuidv4();
+        const room = createRoom(playerName, playerId);
+
         rooms.set(room.code, room);
         socket.join(room.code);
 
         socket.emit("room-created", {
             code: room.code,
+            player: room.players[0],
         });
 
         console.log(`Room ${room.code} created by ${playerName}`);
@@ -73,19 +77,24 @@ io.on("connection", (socket) => {
             return;
         }
 
-        // Add player to room
-        room.players.push({
-            id: socket.id,
+        const playerId = uuidv4();
+        const player = {
+            id: playerId,
             name: playerName,
             score: 0,
-        });
+        }
+        // Add player to room
+        room.players.push(player);
 
         socket.join(code);
-        socket.emit("room-joined", { room });
+        socket.emit("room-joined", {
+            room,
+            player,
+        });
 
         // Notify all players in room
         io.to(code).emit("player-joined", {
-            player: { id: socket.id, name: playerName, score: 0 },
+            player: { id: playerId, name: playerName, score: 0 },
             players: room.players,
         });
 
@@ -156,8 +165,6 @@ io.on("connection", (socket) => {
 
 
 });
-
-
 
 // Health check
 app.get("/", (req, res) => {
