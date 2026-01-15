@@ -28,7 +28,7 @@ const createRoom = (hostId, hostName) => {
         host: hostId,
         players: [{ id: hostId, name: hostName, score: 0 }],
         maxPlayers: 8,
-        messages:[],//msg store here
+        messages: [],//msg store here
         currentDrawer: null,
         currentWord: null,
         gameStarted: false,
@@ -117,10 +117,10 @@ io.on("connection", (socket) => {
             return;
         }
 
-        socket.emit("all-players", { players: room.players });
+        socket.emit("all-players", { players: room.players, hostId: room.host });
     });
 
-   //  FETCH CHAT (REFRESH SUPPORT) 
+    //  FETCH CHAT (REFRESH SUPPORT) 
     socket.on("fetch-chat", ({ roomId }) => {
         const room = rooms.get(roomId);
         if (!room) return;
@@ -140,8 +140,8 @@ io.on("connection", (socket) => {
             time: Date.now(),
         };
         // Save message
-    room.messages.push(msgData);
-     
+        room.messages.push(msgData);
+
         // Broadcast to all players in the room, including sender
         io.to(roomCode).emit("receive-message", msgData);
 

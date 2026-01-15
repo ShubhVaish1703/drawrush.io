@@ -1,11 +1,10 @@
 'use client'
 
-import { useEffect, useState ,useRef}from "react";
+import { useEffect, useState, useRef } from "react";
 import {
     Gamepad2,
     MessageCircle,
     SendHorizontal,
-    Crown
 } from 'lucide-react';
 import MessageBox from "./MessageBox";
 import { initSocket } from "@/socket/socket";
@@ -17,22 +16,23 @@ const GameLobby = ({ roomId, playerName }) => { // Added playerName prop
     const [username, setUsername] = useState(playerName || ""); // Initialize username
     const [messages, setMessages] = useState([]);
     const [messageInput, setMessageInput] = useState("");
+    const [hostId, setHostId] = useState();
 
     const messagesEndRef = useRef(null); // For auto-scrolling chat
 
     //chat history
 
     useEffect(() => {
-    const handleChatHistory = (msgs) => {
-        setMessages(msgs);
-    };
+        const handleChatHistory = (msgs) => {
+            setMessages(msgs);
+        };
 
-    socket.on("chat-history", handleChatHistory);
+        socket.on("chat-history", handleChatHistory);
 
-    return () => {
-        socket.off("chat-history", handleChatHistory);
-    };
-},[socket]); 
+        return () => {
+            socket.off("chat-history", handleChatHistory);
+        };
+    }, [socket]);
 
     // Scroll chat to bottom whenever messages change
     useEffect(() => {
@@ -44,8 +44,9 @@ const GameLobby = ({ roomId, playerName }) => { // Added playerName prop
         socket.emit("fetch-players", { roomId });
         socket.emit("fetch-chat", { roomId });
 
-        const handleAllPlayers = ({ players }) => {
+        const handleAllPlayers = ({ players, hostId }) => {
             setPlayers(players);
+            setHostId(hostId);
             // Set username if not already set
             if (!username) {
                 const me = players.find(p => p.id === socket.id);
@@ -58,7 +59,7 @@ const GameLobby = ({ roomId, playerName }) => { // Added playerName prop
         return () => {
             socket.off("all-players", handleAllPlayers);
         };
-    },[roomId]);
+    }, [roomId]);
 
     //player joined listener
     useEffect(() => {
@@ -71,9 +72,9 @@ const GameLobby = ({ roomId, playerName }) => { // Added playerName prop
         return () => {
             socket.off("player-joined", handlePlayerJoined);
         };
-    },[socket]);
-    
-   //receive messages
+    }, [socket]);
+
+    //receive messages
     useEffect(() => {
         const handleReceiveMessage = (data) => {
             setMessages((prev) => [...prev, data]);
@@ -90,13 +91,13 @@ const GameLobby = ({ roomId, playerName }) => { // Added playerName prop
     const handleSendMessage = () => {
         if (!messageInput.trim()) return;
 
-         // Create message object
-    const msgData = {
-        roomCode: roomId,
-        message: messageInput,
-        senderName: username||"Guest",
-    };
-    //send to server
+        // Create message object
+        const msgData = {
+            roomCode: roomId,
+            message: messageInput,
+            senderName: username || "Guest",
+        };
+        //send to server
         socket.emit("send-message", msgData); // Send to server
 
         setMessageInput("");
@@ -143,7 +144,7 @@ const GameLobby = ({ roomId, playerName }) => { // Added playerName prop
                         {/* Players List - scrollable */}
                         <div className="flex-1 overflow-y-auto p-3 space-y-2">
                             {players.map((player) => (
-                                <PlayerCard key={player.id} player={player} />
+                                <PlayerCard key={player.id} player={player} hostId={hostId} />
                             ))}
                         </div>
 
@@ -208,16 +209,6 @@ const GameLobby = ({ roomId, playerName }) => { // Added playerName prop
                     </div>
                 </div>
             </div>
-
-            <style jsx>{`
-                .hide-scrollbar::-webkit-scrollbar {
-                    display: none;
-                }
-                .hide-scrollbar {
-                    -ms-overflow-style: none;
-                    scrollbar-width: none;
-                }
-            `}</style>
         </div>
     );
 };
