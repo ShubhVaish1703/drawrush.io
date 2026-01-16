@@ -10,6 +10,7 @@ import MessageBox from "./MessageBox";
 import { initSocket } from "@/socket/socket";
 import PlayerCard from "./PlayerCard";
 import Header from "./Header";
+import DrawingBoard from "./DrawingBoard";
 
 const GameLobby = ({ roomId }) => { // Added playerName prop
     const [players, setPlayers] = useState([]);
@@ -20,7 +21,8 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
     const [hostId, setHostId] = useState();
     const [isReconnecting, setIsReconnecting] = useState(true);
 
-    const messagesEndRef = useRef(null); // For auto-scrolling chat
+    const desktopChatRef = useRef(null);
+    const mobileChatRef = useRef(null);
 
     useEffect(() => {
         // Handle reconnection on mount
@@ -29,7 +31,7 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
 
         if (storedPlayer && storedRoomId === roomId) {
             const player = JSON.parse(storedPlayer);
-            console.log(player);
+            // console.log(player);
             setCurrentPlayer(player);
 
             // Reconnect to room with existing playerId
@@ -129,7 +131,14 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
 
     // Auto-scroll chat to bottom
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        const isDesktop = window.innerWidth >= 1024;
+
+        const activeRef = isDesktop ? desktopChatRef : mobileChatRef;
+
+        if (activeRef.current) {
+            activeRef.current.scrollTop =
+                activeRef.current.scrollHeight;
+        }
     }, [messages]);
 
     // Handle error
@@ -177,33 +186,25 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
     }
 
     return (
-        <div
-            className="h-screen p-4 relative bg-cover bg-center bg-no-repeat"
-            style={{ backgroundImage: 'url(/bgImg.jpg)' }}
-        >
+        <div className="fixed inset-0 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: 'url(/bgImg.jpg)' }}>
             {/* Background overlay */}
             <div className="absolute inset-0 bg-black/20"></div>
 
-            <div className="relative flex flex-col h-full gap-4">
-                {/* HEADER */}
+            {/* Desktop Layout (lg and above) */}
+            <div className="relative hidden lg:flex flex-col h-full p-4 gap-4">
                 <Header roomId={roomId} />
 
-                {/* MAIN CONTENT - min-h-0 is crucial for flex children with overflow */}
                 <div className="flex gap-4 flex-1 min-h-0">
                     {/* PLAYERS PANEL */}
                     <div className="bg-slate-800/90 backdrop-blur-sm flex flex-col w-72 rounded-xl overflow-hidden border border-white/20 shadow-2xl">
-                        {/* Header */}
                         <div className="flex text-white items-center gap-2 border-b border-white/20 p-4 bg-slate-900/50">
                             <Gamepad2 className="w-5 h-5 text-purple-400" />
-                            <span className="text-lg font-semibold uppercase">
-                                Players
-                            </span>
+                            <span className="text-lg font-semibold uppercase">Players</span>
                             <span className="ml-auto bg-purple-500 text-white text-xs px-2 py-1 rounded-full">
                                 {players.length}
                             </span>
                         </div>
 
-                        {/* Players List - scrollable */}
                         <div className="flex-1 overflow-y-auto p-3 space-y-2">
                             {players.map((player) => (
                                 <PlayerCard
@@ -215,10 +216,9 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                             ))}
                         </div>
 
-                        {/* Start Game Button */}
                         <div className="p-3 border-t border-white/20 bg-slate-900/50">
                             <button
-                                className="w-full cursor-pointer bg-linear-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-3 rounded-lg transition-all shadow-lg hover:shadow-xl"
+                                className="w-full cursor-pointer bg-linear-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-3 rounded-lg transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                                 disabled={currentPlayer?.id !== hostId}
                             >
                                 {currentPlayer?.id === hostId ? 'Start Game' : 'Waiting for host...'}
@@ -227,27 +227,32 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                     </div>
 
                     {/* GAME CANVAS */}
-                    <div className="bg-white flex-1 rounded-xl shadow-2xl flex items-center justify-center border-4 border-white/30 relative overflow-hidden">
+                    {/* <div className="bg-white flex-1 rounded-xl shadow-2xl flex items-center justify-center border-4 border-white/30 relative overflow-hidden">
                         <div className="absolute inset-0 bg-linear-to-br from-blue-50 to-purple-50"></div>
                         <div className="relative text-center p-8">
                             <div className="text-6xl mb-4">🎨</div>
                             <h2 className="text-3xl font-bold text-gray-700 mb-2">Drawing Canvas</h2>
                             <p className="text-gray-500">Waiting for game to start...</p>
                         </div>
+                    </div> */}
+
+
+                    {/* CANVAS */}
+                    <div className="bg-slate-800/90 backdrop-blur-sm flex-1 rounded-xl overflow-hidden border border-white/20 shadow-2xl">
+                        <DrawingBoard roomId={roomId} />
                     </div>
 
                     {/* CHAT PANEL */}
                     <div className="bg-slate-800/90 backdrop-blur-sm flex flex-col w-80 rounded-xl overflow-hidden border border-white/20 shadow-2xl">
-                        {/* Header */}
                         <div className="flex text-white items-center gap-2 border-b border-white/20 p-4 bg-slate-900/50 shrink-0">
                             <MessageCircle className="w-5 h-5 text-blue-400" />
-                            <span className="text-lg font-semibold uppercase">
-                                Chat
-                            </span>
+                            <span className="text-lg font-semibold uppercase">Chat</span>
                         </div>
 
-                        {/* Messages - scrollable area that takes remaining space */}
-                        <div className="flex-1 overflow-y-auto p-3 space-y-3 min-h-0">
+                        <div
+                            ref={desktopChatRef}
+                            className="flex-1 overflow-y-auto p-3 space-y-3 min-h-0"
+                        >
                             {messages.map((msg, index) => (
                                 <MessageBox
                                     key={`${msg.time}-${index}`}
@@ -256,10 +261,8 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                                     isOwnMessage={msg.senderName === currentPlayer?.name}
                                 />
                             ))}
-                            <div ref={messagesEndRef} />
                         </div>
 
-                        {/* Input - fixed at bottom */}
                         <div className="p-3 border-t border-white/20 bg-slate-900/50 shrink-0">
                             <div className="flex gap-2">
                                 <input
@@ -277,6 +280,96 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                                     <SendHorizontal className="w-5 h-5" />
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Mobile Layout (below lg) */}
+            <div className="relative lg:hidden flex flex-col h-full">
+                <div className="shrink-0 p-3">
+                    <Header roomId={roomId} />
+                </div>
+
+                {/* Fixed Canvas - Always Visible */}
+                <div className="shrink-0 px-3">
+                    <div className="bg-slate-800/90 backdrop-blur-sm rounded-lg overflow-hidden border border-white/20 shadow-2xl" style={{ height: '40vh', minHeight: '280px' }}>
+                        <DrawingBoard roomId={roomId} />
+                    </div>
+                </div>
+
+                {/* Scrollable Chat and Players */}
+                <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3 min-h-0">
+                    {/* CHAT */}
+                    <div className="bg-slate-800/90 backdrop-blur-sm flex flex-col rounded-lg overflow-hidden border border-white/20 shadow-2xl" style={{ minHeight: '250px' }}>
+                        <div className="flex text-white items-center gap-2 border-b border-white/20 p-3 bg-slate-900/50 shrink-0">
+                            <MessageCircle className="w-4 h-4 text-blue-400" />
+                            <span className="text-sm font-semibold uppercase">Chat</span>
+                        </div>
+
+                        <div
+                            ref={mobileChatRef}
+                            className="flex-1 overflow-y-auto p-2 space-y-2"
+                            style={{ minHeight: '150px', maxHeight: '300px' }}
+                        >
+                            {messages.map((msg, index) => (
+                                <MessageBox
+                                    key={`${msg.time}-${index}`}
+                                    SenderName={msg.senderName}
+                                    message={msg.message}
+                                    isOwnMessage={msg.senderName === currentPlayer?.name}
+                                />
+                            ))}
+                        </div>
+
+                        <div className="p-2 border-t border-white/20 bg-slate-900/50 shrink-0">
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={messageInput}
+                                    onChange={(e) => setMessageInput(e.target.value)}
+                                    onKeyPress={handleKeyPress}
+                                    className="bg-white w-full px-3 font-medium py-2 text-sm rounded-lg border-none outline-none focus:ring-2 focus:ring-blue-400 transition-all"
+                                    placeholder="Type a message..."
+                                />
+                                <button
+                                    onClick={handleSendMessage}
+                                    className="px-3 text-white bg-blue-500 hover:bg-blue-600 rounded-lg cursor-pointer transition-all flex items-center justify-center shadow-lg hover:shadow-xl"
+                                >
+                                    <SendHorizontal className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* PLAYERS */}
+                    <div className="bg-slate-800/90 backdrop-blur-sm flex flex-col rounded-lg overflow-hidden border border-white/20 shadow-2xl" style={{ minHeight: '200px' }}>
+                        <div className="flex text-white items-center gap-2 border-b border-white/20 p-3 bg-slate-900/50">
+                            <Gamepad2 className="w-4 h-4 text-purple-400" />
+                            <span className="text-sm font-semibold uppercase">Players</span>
+                            <span className="ml-auto bg-purple-500 text-white text-xs px-2 py-1 rounded-full">
+                                {players.length}
+                            </span>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-2 space-y-2" style={{ minHeight: '100px', maxHeight: '250px' }}>
+                            {players.map((player) => (
+                                <PlayerCard
+                                    key={player.id}
+                                    player={player}
+                                    hostId={hostId}
+                                    isCurrentUser={currentPlayer?.id === player.id}
+                                />
+                            ))}
+                        </div>
+
+                        <div className="p-2 border-t border-white/20 bg-slate-900/50">
+                            <button
+                                className="w-full cursor-pointer bg-linear-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-2.5 text-sm rounded-lg transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled={currentPlayer?.id !== hostId}
+                            >
+                                {currentPlayer?.id === hostId ? 'Start Game' : 'Waiting for host...'}
+                            </button>
                         </div>
                     </div>
                 </div>
