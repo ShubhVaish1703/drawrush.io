@@ -5,7 +5,7 @@ const page = async ({
 }) => {
     const { roomId } = await params;
     return (
-        <div className="h-screen overflow-hidden">
+        <div className="lg:h-screen lg:overflow-hidden">
             <GameLobby
                 roomId={roomId}
             />
