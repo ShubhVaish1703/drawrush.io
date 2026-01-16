@@ -8,8 +8,8 @@ const roboto = Roboto({
 });
 
 export const metadata = {
-  title: "DrawRush - Draw & Fun",
-  description: "DrawRush - Draw & Fun",
+  title: "DrawRush - Free Multiplayer Drawing and Guessing Game",
+  description: "DrawRush - Free Multiplayer Drawing and Guessing Game",
 };
 
 export default function RootLayout({ children }) {

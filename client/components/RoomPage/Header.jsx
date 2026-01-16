@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 
 const Header = ({ roomId }) => {
     return (
-        <div className="border border-white/30 rounded-md md:rounded-xl bg-white/10 backdrop-blur-md p-4 shadow-2xl">
+        <div className="border border-pink-600 rounded-md md:rounded-xl bg-white/10 backdrop-blur-md p-4 shadow-2xl">
             <h1 className="text-3xl sm:text-5xl font-bold text-center  bg-linear-to-r from-purple-600 via-pink-500 to-pink-600 bg-clip-text text-transparent">
                 DRAWRUSH
             </h1>

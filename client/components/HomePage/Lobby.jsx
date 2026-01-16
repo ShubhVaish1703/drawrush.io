@@ -2,6 +2,8 @@
 import { useEffect, useState } from 'react';
 import { initSocket } from '@/socket/socket';
 import { useRouter } from 'next/navigation';
+import { Dot } from 'lucide-react';
+import Header from './Header';
 
 export default function DrawRush() {
     const [name, setName] = useState('');
@@ -78,16 +80,24 @@ export default function DrawRush() {
 
     return (
         <div
-            className="min-h-screen flex items-center justify-center p-4 relative bg-cover bg-center bg-no-repeat"
+            className="min-h-screen flex flex-col items-center justify-center p-4 relative bg-cover bg-center bg-no-repeat"
             style={{ backgroundImage: 'url(/bgImg.jpg)' }}
         >
             <div className="absolute inset-0"></div>
-            <div className="bg-white/95 rounded-3xl shadow-2xl p-6 sm:p-8 w-full max-w-md relative z-10">
-                <h1 className="text-3xl sm:text-4xl font-bold text-center mb-6 sm:mb-8 bg-linear-to-r from-purple-600 via-pink-500 to-pink-600 bg-clip-text text-transparent">
-                    DRAWRUSH
+            <div className='w-[95vw] absolute top-5'>
+                <Header />
+            </div>
+
+            <div className="border border-pink-600 rounded-md md:rounded-3xl bg-white/10 backdrop-blur-md p-4 shadow-2xl w-full max-w-md relative z-10">
+                <h1 className="text-2xl flex justify-center items-center gap-2 md:text-3xl  font-bold text-center mb-4 sm:mb-6 pb-2 bg-linear-to-r from-purple-600 via-pink-500 to-pink-600 bg-clip-text text-transparent border-b-2 border-pink-600">
+                    CREATE
+                    <span className='bg-pink-600 h-3 w-3 rounded-full'></span>
+                    JOIN
+                    <span className='bg-pink-600 h-3 w-3 rounded-full'></span>
+                    PLAY
                 </h1>
 
-                <div className="bg-linear-to-br from-purple-50 to-pink-50 rounded-2xl p-4 sm:p-6 space-y-3 sm:space-y-4 border-2 border-pink-200">
+                <div className="rounded-2xl p-4 sm:p-6 space-y-3 sm:space-y-4">
                     <div>
                         <input
                             type="text"
@@ -97,7 +107,7 @@ export default function DrawRush() {
                                 setName(e.target.value);
                                 if (errors.name) setErrors({ ...errors, name: '' });
                             }}
-                            className={`w-full px-4 py-2.5 sm:py-3 rounded-lg border-2 text-sm sm:text-base ${errors.name ? 'border-red-500' : 'border-gray-300'
+                            className={`w-full text-white px-4 py-2.5 sm:py-3 rounded-lg border-2 text-sm sm:text-base ${errors.name ? 'border-red-500' : 'border-pink-600'
                                 } focus:border-purple-500 focus:outline-none transition-colors`}
                         />
                         {errors.name && (
@@ -115,7 +125,7 @@ export default function DrawRush() {
                                     setRoomId(e.target.value);
                                     if (errors.roomId) setErrors({ ...errors, roomId: '' });
                                 }}
-                                className={`w-full px-4 py-2.5 sm:py-3 rounded-lg border-2 text-sm sm:text-base ${errors.roomId ? 'border-red-500' : 'border-gray-300'
+                                className={`w-full text-white px-4 py-2.5 sm:py-3 rounded-lg border-2 text-sm sm:text-base ${errors.roomId ? 'border-red-500' : 'border-pink-600'
                                     } focus:border-purple-500 focus:outline-none transition-colors`}
                             />
                             {errors.roomId && (
@@ -145,6 +155,20 @@ export default function DrawRush() {
                         </button>
                     </div>
                 </div>
+            </div>
+
+            <div className='w-[95vw] absolute bottom-5'>
+                <p className='text-center text-slate-300 text-sm flex flex-col gap-2'>
+                    <span>
+                        DrawRush.io is a free online multiplayer drawing and guessing pictionary game.
+                    </span>
+                    <span>
+                        A normal game consists of a few rounds, where every round a player has to draw their chosen word and others have to guess it to gain points!
+                    </span>
+                    <span className='hidden md:inline'>
+                        The person with the most points at the end of the game, will then be crowned as the winner! Have fun!
+                    </span>
+                </p>
             </div>
         </div>
     );
