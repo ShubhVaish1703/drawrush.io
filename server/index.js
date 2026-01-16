@@ -31,7 +31,8 @@ const createRoom = (hostName, playerId, socketId) => {
             id: playerId,
             socketId: socketId,
             name: hostName,
-            score: 0
+            score: 0,
+            status: "online"
         }],
         maxPlayers: 8,
         messages: [],//msg store here
@@ -88,6 +89,7 @@ io.on("connection", (socket) => {
             socketId: socket.id,
             name: playerName,
             score: 0,
+            status: "online",
         }
 
         // Add player to room
@@ -131,6 +133,7 @@ io.on("connection", (socket) => {
 
         // Update the socketId for this player
         room.players[playerIndex].socketId = socket.id;
+        room.players[playerIndex].status = "online";
         const player = room.players[playerIndex];
 
         // Join the room again
@@ -140,6 +143,13 @@ io.on("connection", (socket) => {
         socket.emit("room-reconnected", {
             room,
             player,
+        });
+
+        // Notify other players that this player is back online
+        socket.to(code).emit("player-status-changed", {
+            playerId: player.id,
+            status: "online",
+            players: room.players
         });
 
         // Send chat history
@@ -196,13 +206,25 @@ io.on("connection", (socket) => {
     socket.on("disconnect", () => {
         console.log("User disconnected: ", socket.id);
 
-        // Find and update player status (mark as disconnected but don't remove)
+        // Find player and set status to offline
         for (const [code, room] of rooms.entries()) {
-            const player = room.players.find(p => p.socketId === socket.id);
-            if (player) {
-                console.log(`${player.name} disconnected from room ${code}`);
-                // Optionally: You can add a 'connected' flag here
-                // player.connected = false;
+            const playerIndex = room.players.findIndex(p => p.socketId === socket.id);
+
+            if (playerIndex !== -1) {
+                const player = room.players[playerIndex];
+
+                // Set player status to offline (don't remove from room)
+                room.players[playerIndex].status = "offline";
+
+                console.log(`${player.name} went offline in room ${code}`);
+
+                // Notify all players in the room about status change
+                io.to(code).emit("player-status-changed", {
+                    playerId: player.id,
+                    status: "offline",
+                    players: room.players
+                });
+
                 break;
             }
         }
