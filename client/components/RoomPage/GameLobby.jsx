@@ -95,16 +95,22 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
         };
     }, []);
 
-    // Player joined listener
+    // Player joined/left/status changed listeners
     useEffect(() => {
         const handlePlayerJoined = ({ players }) => {
             setPlayers(players);
         };
 
+        const handlePlayerStatusChanged = ({ players }) => {
+            setPlayers(players);
+        };
+
         socket.on("player-joined", handlePlayerJoined);
+        socket.on("player-status-changed", handlePlayerStatusChanged);
 
         return () => {
             socket.off("player-joined", handlePlayerJoined);
+            socket.off("player-status-changed", handlePlayerStatusChanged);
         };
     }, []);
 
