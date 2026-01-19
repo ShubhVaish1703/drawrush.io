@@ -1,9 +1,16 @@
 import Lobby from "@/components/HomePage/Lobby";
+import { Suspense } from 'react'
+
 
 export default function Home() {
   return (
-    <div className="">
-      <Lobby />
-    </div>
+    <Suspense fallback={<div></div>}>
+      <div>
+        <Lobby />
+      </div>
+    </Suspense>
   );
 }
+
+
+
