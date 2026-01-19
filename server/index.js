@@ -82,35 +82,42 @@ io.on("connection", (socket) => {
         const playerId = uuidv4();
         const room = createRoom(playerName, playerId, socket.id);
 
+
         rooms.set(room.code, room);
         socket.join(room.code);
+
 
         socket.emit("room-created", {
             code: room.code,
             player: room.players[0],
         });
 
+
         console.log(`Room ${room.code} created by ${playerName}`);
     });
 
-    // Join existing room
+   // Join existing room
     socket.on("join-room", ({ code, playerName }) => {
         const room = rooms.get(code);
+
 
         if (!room) {
             socket.emit("error", { message: "Room not found" });
             return;
         }
 
+
         if (room.players.length >= room.maxPlayers) {
             socket.emit("error", { message: "Room is full" });
             return;
         }
 
+
         if (room.gameStarted) {
             socket.emit("error", { message: "Game already started" });
             return;
         }
+
 
         const playerId = uuidv4();
         const player = {
@@ -119,10 +126,13 @@ io.on("connection", (socket) => {
             name: playerName,
             score: 0,
             status: "online",
+            hasGuessed: false
         }
+
 
         // Add player to room
         room.players.push(player);
+
 
         socket.join(code);
         socket.emit("room-joined", {
@@ -130,28 +140,35 @@ io.on("connection", (socket) => {
             player,
         });
 
+
         // Notify all players in room
         io.to(code).emit("player-joined", {
             player: player,
             players: room.players,
         });
 
+
         // Send existing drawing to new player
         socket.emit("load-drawing", room.drawingData);
         //send old messages
         socket.emit("chat-history", room.messages);
 
+
         console.log(`${playerName} joined room ${code}`);
     });
+
+
 
     // ** RECONNECT TO ROOM (for page refresh) **
     socket.on("reconnect-room", ({ code, playerId }) => {
         const room = rooms.get(code);
 
+
         if (!room) {
             socket.emit("error", { message: "Room not found" });
             return;
         }
+
 
         // Find the player by their UUID
         const playerIndex = room.players.findIndex(p => p.id === playerId);
@@ -160,19 +177,23 @@ io.on("connection", (socket) => {
             return;
         }
 
+
         // Update the socketId for this player
         room.players[playerIndex].socketId = socket.id;
         room.players[playerIndex].status = "online";
         const player = room.players[playerIndex];
 
+
         // Join the room again
         socket.join(code);
+
 
         // Send room data back
         socket.emit("room-reconnected", {
             room,
             player,
         });
+
 
         // Notify other players that this player is back online
         socket.to(code).emit("player-status-changed", {
@@ -181,23 +202,49 @@ io.on("connection", (socket) => {
             players: room.players
         });
 
+
         // Send chat history
         socket.emit("chat-history", room.messages);
+
 
         // Send existing drawing
         socket.emit("load-drawing", room.drawingData);
 
+
+        // If game is in progress, send current game state
+        if (room.gameStarted) {
+            socket.emit("game-state-sync", {
+                gamePhase: room.gamePhase,
+                currentDrawer: room.currentDrawer,
+                round: room.round,
+                maxRounds: room.maxRounds,
+                wordHint: room.currentWord ? room.currentWord.split('').map(() => '_').join(' ') : null,
+                players: room.players
+            });
+
+
+            // Send word to drawer if reconnecting as drawer
+            if (player.id === room.currentDrawer && room.currentWord) {
+                socket.emit("your-word", { word: room.currentWord });
+            }
+        }
+
+
         console.log(`${player.name} reconnected to room ${code}`);
     })
 
-    // Fetch players
+
+
+   // Fetch players
     socket.on("fetch-players", ({ roomId }) => {
         const room = rooms.get(roomId);
+
 
         if (!room) {
             socket.emit("error", { message: "Room not found" });
             return;
         }
+
 
         socket.emit("all-players", {
             players: room.players,
@@ -205,18 +252,40 @@ io.on("connection", (socket) => {
         });
     });
 
-    //  FETCH CHAT (REFRESH SUPPORT) 
+
+    //  FETCH CHAT (REFRESH SUPPORT)
     socket.on("fetch-chat", ({ roomId }) => {
         const room = rooms.get(roomId);
         if (!room) return;
 
+
         socket.emit("chat-history", room.messages); // refresh chat
     });
 
-    // handle chat messages
+
+
+    
+   // handle chat messages
     socket.on("send-message", ({ roomCode, message, senderName }) => {
         const room = rooms.get(roomCode);
         if (!room) return;
+
+
+        const player = room.players.find(p => p.socketId === socket.id);
+        if (!player) return;
+
+
+        // Check if it's a guess during drawing phase
+        if (room.gamePhase === "drawing") {
+            checkGuess(roomCode, player.id, message);
+
+
+            // Don't save guess messages to chat if they're correct
+            if (message.toLowerCase().trim() === room.currentWord.toLowerCase()) {
+                return;
+            }
+        }
+
 
         // Create message object
         const msgData = {
@@ -227,9 +296,12 @@ io.on("connection", (socket) => {
         // Save message
         room.messages.push(msgData);
 
+
         // Broadcast to all players in the room, including sender
         io.to(roomCode).emit("receive-message", msgData);
     });
+
+
 
     // ** DRAWING EVENTS **
     // Handle drawing
