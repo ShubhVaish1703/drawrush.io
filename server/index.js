@@ -309,32 +309,51 @@ io.on("connection", (socket) => {
         const room = rooms.get(drawData.roomCode);
         if (!room) return;
 
+
+        // Only current drawer can draw
+        const player = room.players.find(p => p.socketId === socket.id);
+        if (!player || player.id !== room.currentDrawer) return;
+
+
         // Save drawing data
         room.drawingData.push(drawData);
+
 
         // Broadcast to all other players in the room
         socket.to(drawData.roomCode).emit("draw", drawData);
     });
+
 
     // Handle clear canvas
     socket.on("clear-canvas", ({ roomCode }) => {
         const room = rooms.get(roomCode);
         if (!room) return;
 
+
+        // Only current drawer can clear
+        const player = room.players.find(p => p.socketId === socket.id);
+        if (!player || player.id !== room.currentDrawer) return;
+
+
         // Clear drawing data
         room.drawingData = [];
+
 
         // Broadcast to all players in the room
         io.to(roomCode).emit("clear-canvas");
     });
+
 
     // Fetch drawing data (for reconnection)
     socket.on("fetch-drawing", ({ roomId }) => {
         const room = rooms.get(roomId);
         if (!room) return;
 
+
         socket.emit("load-drawing", room.drawingData);
     });
+
+
 
     // Handle disconnect
     socket.on("disconnect", () => {
