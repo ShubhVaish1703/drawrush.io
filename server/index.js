@@ -2,25 +2,47 @@ const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const { v4: uuidv4 } = require("uuid");
+const { getRandomWords } = require("./words");
+const { createWordHint } = require("./utils/utils");
+
 
 const app = express();
 const server = http.createServer(app);
 
+
 const io = new Server(server, {
     cors: {
         origin: "*",
+        methods: ["GET", "POST"],
         credentials: true,
     },
+    transports: ['websocket', 'polling'],
+    pingTimeout: 60000,
+    pingInterval: 25000,
+    maxHttpBufferSize: 1e6,
+    allowEIO3: true
 });
+
+
+// Game constants
+const WORD_SELECTION_TIME = 10000; // 10 seconds
+const DRAWING_TIME = 60000; // 600 seconds
+const POINTS = {
+    DRAWER: 300,
+    FIRST_GUESS: 150,
+    OTHER_GUESS: 75
+};
+
 
 // Store all rooms
 const rooms = new Map();
+const roomTimers = new Map(); // Store active timers
+
 
 // Generate random 6-character room code
 const generateRoomCode = () => {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
 };
-
 // Create new room structure
 const createRoom = (hostName, playerId, socketId) => {
     const code = generateRoomCode();
@@ -32,18 +54,25 @@ const createRoom = (hostName, playerId, socketId) => {
             socketId: socketId,
             name: hostName,
             score: 0,
-            status: "online"
+            status: "online",
+            hasGuessed: false,
         }],
         maxPlayers: 8,
         messages: [],//msg store here
         currentDrawer: null,
+        currentDrawerIndex: -1,
         currentWord: null,
+        wordOptions: [],
         gameStarted: false,
+        gamePhase: "lobby", // lobby, word-selection, drawing, round-end, game-end
         round: 0,
         maxRounds: 3,
         drawingData: [],
+        correctGuessers: [], // Track who guessed correctly and when
+        turnStartTime: null,
     };
 };
+
 
 io.on("connection", (socket) => {
     console.log('User connected: ', socket.id);
