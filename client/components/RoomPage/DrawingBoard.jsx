@@ -57,6 +57,39 @@ const DrawingBoard = ({ roomId, canDraw = true }) => {
     };
   }, []);
 
+  // Socket listeners for drawing
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleDraw = (data) => {
+      drawStroke(data);
+    };
+
+    const handleClear = () => {
+      clearCanvas();
+    };
+
+    const handleLoadDrawing = (drawHistory) => {
+      clearCanvas();
+      if (drawHistory && drawHistory.length > 0) {
+        drawHistory.forEach((data) => drawStroke(data));
+      }
+    };
+
+    socket.on("draw", handleDraw);
+    socket.on("clear-canvas", handleClear);
+    socket.on("load-drawing", handleLoadDrawing);
+
+    // Request drawing history when component mounts
+    socket.emit("fetch-drawing", { roomId });
+
+    return () => {
+      socket.off("draw", handleDraw);
+      socket.off("clear-canvas", handleClear);
+      socket.off("load-drawing", handleLoadDrawing);
+    };
+  }, [socket, roomId]);
+
   const drawStroke = (data) => {
     const ctx = ctxRef.current;
     if (!ctx) return;
@@ -174,19 +207,27 @@ const DrawingBoard = ({ roomId, canDraw = true }) => {
             </div>
           )}
 
-          {/* Size Control */}
+          {/* Color Palette */}
           {canDraw && (
-            <div className="flex gap-2 items-center text-white">
-              <span className="text-sm tracking-wide font-medium">Size </span>
+            <div className="flex gap-2 items-center flex-wrap">
+              {colorPalette.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => setColor(c)}
+                  className={`h-6 w-6 md:w-7 md:h-7 rounded-full border-2 transition ${
+                    color === c
+                      ? "border-white scale-110"
+                      : "border-gray-500 cursor-pointer"
+                  }`}
+                  style={{ backgroundColor: c }}
+                />
+              ))}
               <input
-                type="range"
-                min="1"
-                max="30"
-                value={size}
-                onChange={(e) => setSize(Number(e.target.value))}
-                className="w-20"
+                type="color"
+                value={color}
+                onChange={(e) => setColor(e.target.value)}
+                className="w-7 h-7 rounded-full cursor-pointer"
               />
-              <span className="text-sm w-10">{size}px</span>
             </div>
           )}
 
