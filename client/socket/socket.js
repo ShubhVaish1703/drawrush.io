@@ -4,7 +4,7 @@ let socket = null;
 
 // const SERVER_URL = "10.34.109.167:5000"
 // const SERVER_URL = "10.233.251.167:5000"
-const SERVER_URL = "172.20.10.4:5000"
+const SERVER_URL = "https://drawrushserver-hosting.onrender.com"
 // const SERVER_URL = "http://localhost:5000"
 
 export const initSocket = () => {

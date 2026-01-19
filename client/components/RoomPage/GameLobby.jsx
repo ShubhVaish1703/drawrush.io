@@ -787,6 +787,7 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                                 else if (msg?.type == "updates") {
                                     return (
                                         <Updates
+                                            key={index}
                                             message={msg?.message}
                                         />
                                     )
@@ -794,6 +795,7 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                                 else if (msg?.type == "game-ended") {
                                     return (
                                         <GameEndedPlayersLeft
+                                            key={index}
                                             message={msg?.message}
                                         />
                                     )
