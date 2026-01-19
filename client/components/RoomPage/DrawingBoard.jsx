@@ -2,17 +2,14 @@
 import { initSocket } from "@/socket/socket";
 import { useEffect, useRef, useState } from "react";
 
-
 const TOOLS = {
     PEN: "pen",
     ERASER: "eraser",
 };
 
-
 // Fixed canvas dimensions for consistency across all devices
 const CANVAS_WIDTH = 1200;
 const CANVAS_HEIGHT = 700;
-
 
 const DrawingBoard = ({ roomId, canDraw = true }) => {
     const socket = initSocket();
@@ -26,40 +23,33 @@ const DrawingBoard = ({ roomId, canDraw = true }) => {
     const [start, setStart] = useState({ x: 0, y: 0 });
     const [scale, setScale] = useState(1);
 
-
     const colorPalette = [
         "#000000", "#FFFFFF", "#FF0000", "#00FF00",
         "#0000FF", "#FFFF00", "#FF00FF", "#00FFFF"
     ];
-
 
     // Initialize canvas with fixed dimensions
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
 
-
         // Set fixed canvas dimensions
         canvas.width = CANVAS_WIDTH;
         canvas.height = CANVAS_HEIGHT;
-
 
         const ctx = canvas.getContext("2d");
         ctx.lineCap = "round";
         ctx.lineJoin = "round";
         ctxRef.current = ctx;
 
-
         // Calculate scale to fit container
         updateScale();
         window.addEventListener('resize', updateScale);
-
 
         return () => {
             window.removeEventListener('resize', updateScale);
         };
     }, []);
-
 
     // Update scale based on container size
     const updateScale = () => {
@@ -67,35 +57,28 @@ const DrawingBoard = ({ roomId, canDraw = true }) => {
         const canvas = canvasRef.current;
         if (!container || !canvas) return;
 
-
         const containerWidth = container.clientWidth;
         const containerHeight = container.clientHeight;
-
 
         // Calculate scale to fit while maintaining aspect ratio
         const scaleX = containerWidth / CANVAS_WIDTH;
         const scaleY = containerHeight / CANVAS_HEIGHT;
         const newScale = Math.min(scaleX, scaleY, 1); // Never scale up, only down
 
-
         setScale(newScale);
     };
-
 
     // Socket listeners for drawing
     useEffect(() => {
         if (!socket) return;
 
-
         const handleDraw = (data) => {
             drawStroke(data);
         };
 
-
         const handleClear = () => {
             clearCanvas();
         };
-
 
         const handleLoadDrawing = (drawHistory) => {
             clearCanvas();
@@ -104,15 +87,12 @@ const DrawingBoard = ({ roomId, canDraw = true }) => {
             }
         };
 
-
         socket.on("draw", handleDraw);
         socket.on("clear-canvas", handleClear);
         socket.on("load-drawing", handleLoadDrawing);
 
-
         // Request drawing history when component mounts
         socket.emit("fetch-drawing", { roomId });
-
 
         return () => {
             socket.off("draw", handleDraw);
@@ -121,11 +101,9 @@ const DrawingBoard = ({ roomId, canDraw = true }) => {
         };
     }, [socket, roomId]);
 
-
     const drawStroke = (data) => {
         const ctx = ctxRef.current;
         if (!ctx) return;
-
 
         if (data.tool === TOOLS.ERASER) {
             ctx.globalCompositeOperation = "destination-out";
@@ -135,9 +113,7 @@ const DrawingBoard = ({ roomId, canDraw = true }) => {
             ctx.strokeStyle = data.color;
         }
 
-
         ctx.lineWidth = data.size;
-
 
         ctx.beginPath();
         ctx.moveTo(data.startX, data.startY);
@@ -145,25 +121,20 @@ const DrawingBoard = ({ roomId, canDraw = true }) => {
         ctx.stroke();
         ctx.closePath();
 
-
         ctx.globalCompositeOperation = "source-over";
     };
-
 
     const getCoords = (e) => {
         const canvas = canvasRef.current;
         const rect = canvas.getBoundingClientRect();
         const event = e.touches ? e.touches[0] : e;
 
-
         // Convert screen coordinates to canvas coordinates accounting for scale
         const x = (event.clientX - rect.left) / scale;
         const y = (event.clientY - rect.top) / scale;
 
-
         return { x, y };
     };
-
 
     const startDrawing = (e) => {
         // e.preventDefault();
@@ -172,15 +143,12 @@ const DrawingBoard = ({ roomId, canDraw = true }) => {
         setIsDrawing(true);
     };
 
-
     const draw = (e) => {
         if (!isDrawing) return;
         if (!canDraw) return;
         // e.preventDefault();
 
-
         const { x, y } = getCoords(e);
-
 
         const drawData = {
             tool,
@@ -193,19 +161,15 @@ const DrawingBoard = ({ roomId, canDraw = true }) => {
             roomCode: roomId,
         };
 
-
         drawStroke(drawData);
         socket.emit("draw", drawData);
-
 
         setStart({ x, y });
     };
 
-
     const stopDrawing = () => {
         setIsDrawing(false);
     };
-
 
     const clearCanvas = () => {
         const ctx = ctxRef.current;
@@ -214,12 +178,10 @@ const DrawingBoard = ({ roomId, canDraw = true }) => {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
     };
 
-
     const handleClear = () => {
         clearCanvas();
         socket.emit("clear-canvas", { roomCode: roomId });
     };
-
 
     return (
         <div className="flex flex-col h-full">
@@ -253,7 +215,6 @@ const DrawingBoard = ({ roomId, canDraw = true }) => {
                         </div>
                     }
 
-
                     {/* Color Palette */}
                     {
                         canDraw &&
@@ -276,7 +237,6 @@ const DrawingBoard = ({ roomId, canDraw = true }) => {
                         </div>
                     }
 
-
                     {/* Size Control */}
                     {
                         canDraw &&
@@ -294,14 +254,12 @@ const DrawingBoard = ({ roomId, canDraw = true }) => {
                         </div>
                     }
 
-
                     {/* Can't draw indicator */}
                     {!canDraw && (
                         <div className="text-center font-bold text-gray-300 text-sm py-2">
                             👀 Watch and guess!
                         </div>
                     )}
-
 
                     {/* Clear Button */}
                     {
@@ -316,7 +274,6 @@ const DrawingBoard = ({ roomId, canDraw = true }) => {
                     }
                 </div>
             </div>
-
 
             {/* Canvas Container */}
             <div
@@ -346,10 +303,5 @@ const DrawingBoard = ({ roomId, canDraw = true }) => {
     );
 };
 
-
 export default DrawingBoard;
-
-
-
-
 

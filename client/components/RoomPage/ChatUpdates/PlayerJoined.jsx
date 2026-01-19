@@ -2,7 +2,6 @@ import { capitalizeFirst } from '@/utils/utils'
 import { Gamepad2 } from 'lucide-react'
 import React from 'react'
 
-
 const PlayerJoined = ({ message }) => {
     return (
         <div className='border flex gap-2 items-center text-white text-sm rounded-lg px-4 py-2 border-blue-400 bg-white/10 backdrop-blur-md'>
@@ -19,8 +18,4 @@ const PlayerJoined = ({ message }) => {
     )
 }
 
-
 export default PlayerJoined
-
-
-

@@ -3,18 +3,14 @@ import { Copy, Link } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 import toast from "react-hot-toast";
 
-
 const Header = ({ roomId }) => {
     const [origin, setOrigin] = useState('');
-
 
     useEffect(() => {
         setOrigin(window.location.origin);
     }, []);
 
-
     const url = origin + `?rid=${roomId}`;
-
 
     return (
         <div className="border border-pink-600 rounded-md md:rounded-xl bg-white/10 backdrop-blur-md p-4 shadow-2xl">
@@ -46,8 +42,4 @@ const Header = ({ roomId }) => {
     )
 }
 
-
 export default Header
-
-
-

@@ -3,20 +3,16 @@ import { bottts } from '@dicebear/collection';
 import Image from 'next/image';
 import { capitalizeFirst } from '@/utils/utils';
 
-
 const MessageBox = ({
     SenderName, message, isOwnMessage
 }) => {
-
 
     const avatar = createAvatar(bottts, {
         seed: SenderName,
         backgroundColor: ["b6e3f4", "c0aede", "d1d4f9"]
     });
 
-
     const image = avatar.toDataUri();
-
 
     return (
         <div className='flex items-start gap-2'>
@@ -45,8 +41,4 @@ const MessageBox = ({
     )
 }
 
-
 export default MessageBox
-
-
-

@@ -41,35 +41,28 @@ const WORD_BANK = [
     "home", "family", "friend", "work", "travel", "exercise", "walk", "run", "rest", "clean", "cook", "wash", "clothes", "shoes", "bag", "watch", "clock", "calendar", "holiday"
 ];
 
-
 const getRandomWords = (() => {
     let recent = new Set();
     const MAX_RECENT = 50;
-
 
     return (count = 3) => {
         // safety: never ask for more than available
         count = Math.min(count, WORD_BANK.length);
 
-
         const selected = new Set();
         const maxAttempts = WORD_BANK.length * 2;
         let attempts = 0;
-
 
         while (selected.size < count && attempts < maxAttempts) {
             const word =
                 WORD_BANK[Math.floor(Math.random() * WORD_BANK.length)];
 
-
             if (!recent.has(word) && !selected.has(word)) {
                 selected.add(word);
             }
 
-
             attempts++;
         }
-
 
         // guaranteed fallback
         if (selected.size < count) {
@@ -81,19 +74,15 @@ const getRandomWords = (() => {
             }
         }
 
-
         // update recent cache
         selected.forEach(w => recent.add(w));
-
 
         if (recent.size > MAX_RECENT) {
             recent = new Set([...recent].slice(-MAX_RECENT));
         }
 
-
         return [...selected];
     };
 })();
-
 
 module.exports = { getRandomWords };

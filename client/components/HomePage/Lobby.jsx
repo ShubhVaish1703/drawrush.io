@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useSearchParams } from 'next/navigation'
 import Header from './Header';
 
-
 export default function DrawRush() {
     const searchParams = useSearchParams()
     const rId = searchParams.get('rid')
@@ -15,15 +14,12 @@ export default function DrawRush() {
     const [errors, setErrors] = useState({ name: '', roomId: '' });
     const router = useRouter();
 
-
     useEffect(() => {
         const socket = initSocket();
-
 
         socket.on("connect", () => {
             // console.log("Connected:", socket.id);
         });
-
 
         socket.on("room-created", ({ code, player }) => {
             sessionStorage.setItem("player", JSON.stringify(player));
@@ -31,19 +27,16 @@ export default function DrawRush() {
             router.push(`/room/${code}`);
         });
 
-
         socket.on("room-joined", ({ room, player }) => {
             sessionStorage.setItem("player", JSON.stringify(player));
             sessionStorage.setItem("roomId", room.code);
             router.push(`/room/${room.code}`);
         });
 
-
         // Handle errors
         socket.on("error", ({ message }) => {
             alert(message);
         });
-
 
         return () => {
             socket.off("room-created");
@@ -53,11 +46,9 @@ export default function DrawRush() {
         };
     }, []);
 
-
     const handleCreateRoom = (e) => {
         e.preventDefault();
         setErrors({ name: '', roomId: '' });
-
 
         if (!name.trim()) {
             setErrors({ name: 'Name is required', roomId: '' });
@@ -67,11 +58,9 @@ export default function DrawRush() {
         socket.emit("create-room", { playerName: name.trim() });
     };
 
-
     const handleJoinRoom = (e) => {
         e.preventDefault();
         const newErrors = { name: '', roomId: '' };
-
 
         if (!name.trim()) {
             newErrors.name = 'Name is required';
@@ -79,7 +68,6 @@ export default function DrawRush() {
         if (!roomId.trim()) {
             newErrors.roomId = 'Room ID is required';
         }
-
 
         if (newErrors.name || newErrors.roomId) {
             setErrors(newErrors);
@@ -92,7 +80,6 @@ export default function DrawRush() {
         });
     };
 
-
     return (
         <div
             className="min-h-screen flex flex-col items-center justify-center p-4 relative bg-cover bg-center bg-no-repeat"
@@ -103,7 +90,6 @@ export default function DrawRush() {
                 <Header />
             </div>
 
-
             <div className="border border-pink-600 rounded-md md:rounded-3xl bg-white/10 backdrop-blur-md p-4 shadow-2xl w-full max-w-md relative z-10">
                 <h1 className="text-2xl flex justify-center items-center gap-2 md:text-3xl  font-bold text-center mb-4 sm:mb-6 pb-2 bg-linear-to-r from-purple-600 via-pink-500 to-pink-600 bg-clip-text text-transparent border-b-2 border-pink-600">
                     CREATE
@@ -112,7 +98,6 @@ export default function DrawRush() {
                     <span className='bg-pink-600 h-3 w-3 rounded-full'></span>
                     PLAY
                 </h1>
-
 
                 <div className="rounded-2xl p-4 sm:p-6 space-y-3 sm:space-y-4">
                     <div>
@@ -132,7 +117,6 @@ export default function DrawRush() {
                         )}
                     </div>
 
-
                     {mode === 'join' && (
                         <div>
                             <input
@@ -151,7 +135,6 @@ export default function DrawRush() {
                             )}
                         </div>
                     )}
-
 
                     <div className="flex flex-col sm:flex-row gap-3 pt-2">
                         <button
@@ -176,7 +159,6 @@ export default function DrawRush() {
                 </div>
             </div>
 
-
             <div className='w-[95vw] absolute bottom-5'>
                 <p className='text-center text-slate-300 text-sm flex flex-col gap-2'>
                     <span>
@@ -193,4 +175,3 @@ export default function DrawRush() {
         </div>
     );
 }
-
