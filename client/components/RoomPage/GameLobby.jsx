@@ -24,7 +24,7 @@ import { useRouter } from "next/navigation";
 import Updates from "./ChatUpdates/Updates";
 import GameEndedPlayersLeft from "./ChatUpdates/GameEndedPlayersLeft";
 import WaitingScreen from "./LobbyComponents/WaitingScreen";
-import VoiceChat from "./VoiceChat/VoiceChat";
+// import VoiceChat from "./VoiceChat/VoiceChat";
 import SettingsScreen from "./LobbyComponents/SettingsScreen";
 
 const GameLobby = ({ roomId }) => { // Added playerName prop
@@ -782,13 +782,13 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                             <MessageCircle className="w-5 h-5 text-blue-400" />
                             <span className="text-lg font-semibold uppercase">Chat</span>
 
-                            <div className="flex w-full justify-end">
+                            {/* <div className="flex w-full justify-end">
                                 <VoiceChat
                                     isCurrentPlayerDrawer={isCurrentPlayerDrawer}
                                     roomCode={roomId}
                                     playerId={currentPlayer?.id}
                                 />
-                            </div>
+                            </div> */}
                         </div>
 
                         <div ref={desktopChatRef} className="flex-1 overflow-y-auto p-3 space-y-3 min-h-0">
@@ -997,13 +997,13 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                             <MessageCircle className="w-4 h-4 text-blue-400" />
                             <span className=" font-semibold uppercase">Chat</span>
 
-                            <div className="flex w-full justify-end">
+                            {/* <div className="flex w-full justify-end">
                                 <VoiceChat
                                     isCurrentPlayerDrawer={isCurrentPlayerDrawer}
                                     roomCode={roomId}
                                     playerId={currentPlayer?.id}
                                 />
-                            </div>
+                            </div> */}
                         </div>
 
                         {/* display messages */}
