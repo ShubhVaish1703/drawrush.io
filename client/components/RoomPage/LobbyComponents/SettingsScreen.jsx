@@ -4,7 +4,6 @@ import { Settings, Users, Clock, Trophy, X } from 'lucide-react';
 import { initSocket } from '@/socket/socket';
 import { createPortal } from 'react-dom';
 
-
 const SettingsScreen = ({ roomCode, playerId, hostId }) => {
     const socket = initSocket();
     const [settings, setSettings] = useState({
@@ -18,19 +17,16 @@ const SettingsScreen = ({ roomCode, playerId, hostId }) => {
     const [isHost, setIsHost] = useState(false);
     const [mounted, setMounted] = useState(false);
 
-
     useEffect(() => {
         setMounted(true);
         setIsHost(playerId === hostId);
     }, [playerId, hostId]);
-
 
     useEffect(() => {
         // Fetch current settings on mount
         if (socket && roomCode) {
             socket.emit('fetch-settings', { roomId: roomCode });
         }
-
 
         // Listen for settings updates
         const handleSettingsUpdated = (data) => {
@@ -42,18 +38,15 @@ const SettingsScreen = ({ roomCode, playerId, hostId }) => {
             }
         };
 
-
         const handleSettingsData = (data) => {
             setSettings(data.settings);
             setTempSettings(data.settings);
         };
 
-
         if (socket) {
             socket.on('settings-updated', handleSettingsUpdated);
             socket.on('settings-data', handleSettingsData);
         }
-
 
         return () => {
             if (socket) {
@@ -63,14 +56,12 @@ const SettingsScreen = ({ roomCode, playerId, hostId }) => {
         };
     }, [socket, roomCode]);
 
-
     const handleSettingChange = (key, value) => {
         setTempSettings(prev => ({
             ...prev,
             [key]: value
         }));
     };
-
 
     const handleSaveSettings = () => {
         if (socket && roomCode) {
@@ -82,24 +73,20 @@ const SettingsScreen = ({ roomCode, playerId, hostId }) => {
         }
     };
 
-
     const handleCancelSettings = () => {
         setTempSettings(settings);
         closeSettings();
     };
-
 
     const openSettings = () => {
         setShowSettings(true);
         requestAnimationFrame(() => setAnimateSettings(true));
     };
 
-
     const closeSettings = () => {
         setAnimateSettings(false);
         setTimeout(() => setShowSettings(false), 300);
     };
-
 
     const SettingsModal = () => (
         <div
@@ -116,7 +103,6 @@ const SettingsScreen = ({ roomCode, playerId, hostId }) => {
                 onClick={(e) => e.stopPropagation()}
             >
 
-
                 <div className="p-4 border-b border-slate-200 flex items-center justify-between shrink-0 bg-white rounded-t-lg">
                     <h2 className="font-bold text-slate-800 flex items-center gap-2">
                         <Settings className="w-5 h-5" />
@@ -129,7 +115,6 @@ const SettingsScreen = ({ roomCode, playerId, hostId }) => {
                         <X className="w-5 h-5 text-slate-600" />
                     </button>
                 </div>
-
 
                 <div className="p-4 space-y-4">
                     {/* Max Players */}
@@ -152,7 +137,6 @@ const SettingsScreen = ({ roomCode, playerId, hostId }) => {
                         </p>
                     </div>
 
-
                     {/* Round Duration */}
                     <div>
                         <label className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
@@ -174,7 +158,6 @@ const SettingsScreen = ({ roomCode, playerId, hostId }) => {
                             Time limit for each drawing round
                         </p>
                     </div>
-
 
                     {/* Number of Rounds */}
                     <div>
@@ -199,7 +182,6 @@ const SettingsScreen = ({ roomCode, playerId, hostId }) => {
                     </div>
                 </div>
 
-
                 <div className="p-4 border-t border-slate-200 flex gap-2">
                     <button
                         onClick={handleCancelSettings}
@@ -218,7 +200,6 @@ const SettingsScreen = ({ roomCode, playerId, hostId }) => {
         </div>
     )
 
-
     return (
         <div className="flex flex-col h-full">
             <div className='p-3'>
@@ -226,7 +207,6 @@ const SettingsScreen = ({ roomCode, playerId, hostId }) => {
                     ⚙️ Game Settings
                 </div>
             </div>
-
 
             <div className="flex-1 p-4 flex flex-col items-center justify-center bg-white min-h-0 overflow-hidden">
                 {/* Current settings display */}
@@ -256,7 +236,6 @@ const SettingsScreen = ({ roomCode, playerId, hostId }) => {
                     </div>
                 </div>
 
-
                 {/* Settings button (only for host) */}
                 {isHost && (
                     <button
@@ -268,7 +247,6 @@ const SettingsScreen = ({ roomCode, playerId, hostId }) => {
                     </button>
                 )}
 
-
                 {!isHost && (
                     <p className="text-xs text-black mt-2">
                         Only the host can change game settings
@@ -276,18 +254,14 @@ const SettingsScreen = ({ roomCode, playerId, hostId }) => {
                 )}
             </div>
 
-
             {/* Render Modal using Portal - This ensures it's above everything */}
             {mounted && showSettings && isHost && createPortal(
                 <SettingsModal />,
                 document.body
             )}
 
-
         </div>
     );
 };
 
-
 export default SettingsScreen;
-

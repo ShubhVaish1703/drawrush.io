@@ -1,6 +1,5 @@
 import React from 'react'
 
-
 const WaitingScreen = () => {
     return (
         <div className="flex flex-col h-full">
@@ -19,8 +18,4 @@ const WaitingScreen = () => {
     )
 }
 
-
 export default WaitingScreen
-
-
-
