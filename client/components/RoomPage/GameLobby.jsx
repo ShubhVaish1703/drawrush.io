@@ -1,5 +1,6 @@
 'use client'
 
+
 import { useEffect, useState, useRef } from "react";
 import {
     Gamepad2,
@@ -24,6 +25,8 @@ import { useRouter } from "next/navigation";
 import Updates from "./ChatUpdates/Updates";
 import GameEndedPlayersLeft from "./ChatUpdates/GameEndedPlayersLeft";
 import WaitingScreen from "./LobbyComponents/WaitingScreen";
+import SettingsScreen from "./LobbyComponents/SettingsScreen";
+
 
 const GameLobby = ({ roomId }) => { // Added playerName prop
     const [players, setPlayers] = useState([]);
@@ -35,6 +38,7 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
     const [isReconnecting, setIsReconnecting] = useState(true);
     const [invalidUser, setInvalidUser] = useState(false);
     const router = useRouter();
+
 
     // Game state
     const [gameStarted, setGameStarted] = useState(false);
@@ -51,9 +55,11 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
     const [leaderboard, setLeaderboard] = useState([]);
     const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
 
+
     const desktopChatRef = useRef(null);
     const mobileChatRef = useRef(null);
     const timerRef = useRef(null);
+
 
     // useEffect render at first, loads all initial state and data  ,, reconnecting logic
     useEffect(() => {
@@ -61,9 +67,11 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
         const storedPlayer = sessionStorage.getItem("player");
         const storedRoomId = sessionStorage.getItem("roomId");
 
+
         if (storedPlayer && storedRoomId === roomId) {
             const player = JSON.parse(storedPlayer);
             setCurrentPlayer(player);
+
 
             // Reconnect to room with existing playerId
             socket.emit("reconnect-room", {
@@ -76,6 +84,7 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
             setIsReconnecting(false);
         }
 
+
         // Listen for reconnection success
         const handleRoomReconnected = ({ room, player }) => {
             setCurrentPlayer(player);
@@ -85,12 +94,15 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
             setGameStarted(room.gameStarted);
             setIsReconnecting(false);
 
+
             // Update sessionStorage with latest data
             sessionStorage.setItem("player", JSON.stringify(player));
             sessionStorage.setItem("roomId", roomId);
         };
 
+
         socket.on("room-reconnected", handleRoomReconnected);
+
 
         // Cleanup
         return () => {
@@ -98,24 +110,30 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
         };
     }, [roomId]);
 
+
     // Fetch players and chat on mount
     useEffect(() => {
         if (isReconnecting) return;
 
+
         socket.emit("fetch-players", { roomId });
         socket.emit("fetch-chat", { roomId });
+
 
         const handleAllPlayers = ({ players, hostId }) => {
             setPlayers(players);
             setHostId(hostId);
         };
 
+
         socket.on("all-players", handleAllPlayers);
+
 
         return () => {
             socket.off("all-players", handleAllPlayers);
         };
     }, [roomId, isReconnecting]);
+
 
     // Chat listeners
     useEffect(() => {
@@ -123,18 +141,22 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
             setMessages(msgs);
         };
 
+
         const handleReceiveMessage = (data) => {
             setMessages((prev) => [...prev, data]);
         };
 
+
         socket.on("chat-history", handleChatHistory);
         socket.on("receive-message", handleReceiveMessage);
+
 
         return () => {
             socket.off("chat-history", handleChatHistory);
             socket.off("receive-message", handleReceiveMessage);
         };
     }, []);
+
 
     // Player joined/left/status changed listeners
     useEffect(() => {
@@ -148,18 +170,22 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
             setPlayers(players);
         };
 
+
         const handlePlayerStatusChanged = ({ players }) => {
             setPlayers(players);
         };
 
+
         socket.on("player-joined", handlePlayerJoined);
         socket.on("player-status-changed", handlePlayerStatusChanged);
+
 
         return () => {
             socket.off("player-joined", handlePlayerJoined);
             socket.off("player-status-changed", handlePlayerStatusChanged);
         };
     }, []);
+
 
     // Game event listeners
     useEffect(() => {
@@ -169,6 +195,7 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
             setMaxRounds(maxRounds);
             setGamePhase("starting");
         };
+
 
         // Turn start
         const handleTurnStart = ({ drawerId, drawerName, round, maxRounds }) => {
@@ -182,12 +209,14 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
             setSelectedWord(null);
         };
 
+
         // Word options (only for drawer)
         const handleWordOptions = ({ words, timeLimit }) => {
             setWordOptions(words);
             setGamePhase("word-selection");
             setTimeLeft(Math.floor(timeLimit / 1000));
         };
+
 
         // Drawing phase start
         const handleDrawingPhaseStart = ({ wordHint, timeLimit }) => {
@@ -197,10 +226,12 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
             setWordOptions([]);
         };
 
+
         // Your word (only for drawer)
         const handleYourWord = ({ word }) => {
             setSelectedWord(word);
         };
+
 
         // Correct guess
         const handleCorrectGuess = ({ playerId, playerName, players }) => {
@@ -214,6 +245,7 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
             setCorrectGuessers(prev => [...prev, { playerId, playerName }]);
         };
 
+
         // Turn end
         const handleTurnEnd = ({ word, players }) => {
             setRevealedWord(word);
@@ -221,6 +253,7 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
             setGamePhase("turn-end");
             setTimeLeft(0);
         };
+
 
         // Round end
         const handleRoundEnd = ({ round, players }) => {
@@ -236,12 +269,14 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
             setCurrentRound(round);
         };
 
+
         // Game end
         const handleGameEnd = ({ leaderboard, winner }) => {
             setLeaderboard(leaderboard);
             setGamePhase("game-end");
             setGameStarted(false);
         };
+
 
         // Game reset (after leaderboard)
         const handleGameReset = ({ players, hostId, message }) => {
@@ -257,11 +292,13 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
             setSelectedWord(null);
             setRevealedWord("");
 
+
             // Show notification to players
             toast(message, {
                 icon: '👏',
             });
         };
+
 
         // handle player left
         const handlePlayerLeft = ({ playerName, players, hostId, wasDrawing }) => {
@@ -269,12 +306,14 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
             setPlayers(players);
             setHostId(hostId);
 
+
             // Show notification in chat
             const notification = {
                 type: 'updates',
                 message: `${capitalizeFirst(playerName)} left the room`,
             };
             setMessages(prev => [...prev, notification]);
+
 
             // Extra notification if drawer left
             if (wasDrawing) {
@@ -286,13 +325,16 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
             }
         };
 
+
         const handleLeftRoom = ({ redirect }) => {
             if (redirect) {
                 // Clear session storage
                 sessionStorage.removeItem("player");
                 sessionStorage.removeItem("roomId");
 
+
                 toast.success("You have left the room. Redirecting to home...");
+
 
                 // Small delay to ensure socket disconnect is processed
                 setTimeout(() => {
@@ -300,6 +342,7 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                 }, 100);
             }
         };
+
 
         const handleGameEndedInsufficientPlayers = ({ message, players, hostId }) => {
             // Update state
@@ -315,17 +358,20 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
             setRevealedWord("");
             setLeaderboard([]);
 
+
             const GameEndedNotSufficientPLayersMessage = {
                 type: 'game-ended',
                 message: `${players[0]?.name}`,
             };
             setMessages(prev => [...prev, GameEndedNotSufficientPLayersMessage]);
 
+
             // Show alert
             setTimeout(() => {
                 toast.error(message);
             }, 300);
         };
+
 
         // Game state sync (for reconnection)
         const handleGameStateSync = ({ gamePhase, currentDrawer, round, maxRounds, wordHint, players }) => {
@@ -336,6 +382,7 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
             setWordHint(wordHint || "");
             setPlayers(players);
         };
+
 
         socket.on("game-started", handleGameStarted);
         socket.on("turn-start", handleTurnStart);
@@ -348,12 +395,15 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
         socket.on("game-end", handleGameEnd);
         socket.on("game-reset", handleGameReset);
 
+
         // Leave room events (NEW!)
         socket.on("player-left", handlePlayerLeft);
         socket.on("left-room", handleLeftRoom);
         socket.on("game-ended-insufficient-players", handleGameEndedInsufficientPlayers);
 
+
         socket.on("game-state-sync", handleGameStateSync);
+
 
         return () => {
             socket.off("game-started", handleGameStarted);
@@ -373,6 +423,7 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
         };
     }, []);
 
+
     // Timer countdown
     useEffect(() => {
         if (timeLeft > 0) {
@@ -385,6 +436,7 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
             }
         }
 
+
         return () => {
             if (timerRef.current) {
                 clearInterval(timerRef.current);
@@ -392,15 +444,18 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
         };
     }, [timeLeft]);
 
+
     // Auto-scroll chat to bottom
     useEffect(() => {
         const isDesktop = window.innerWidth >= 1024;
         const activeRef = isDesktop ? desktopChatRef : mobileChatRef;
 
+
         if (activeRef.current) {
             activeRef.current.scrollTop = activeRef.current.scrollHeight;
         }
     }, [messages]);
+
 
     // Handle error
     useEffect(() => {
@@ -409,16 +464,20 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
             alert(message);
         };
 
+
         socket.on("error", handleError);
+
 
         return () => {
             socket.off("error", handleError);
         };
     }, []);
 
+
     // Send message
     const handleSendMessage = () => {
         if (!messageInput.trim()) return;
+
 
         // Create message object
         const msgData = {
@@ -427,10 +486,12 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
             senderName: currentPlayer?.name || "Guest",
         };
 
+
         // Send to server
         socket.emit("send-message", msgData); // Send to server
         setMessageInput("");
     };
+
 
     const handleKeyPress = (e) => {
         if (e.key === 'Enter') {
@@ -438,29 +499,36 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
         }
     };
 
+
     // Start game
     const handleStartGame = () => {
+        setGameStarted(true);
         socket.emit("start-game", { roomCode: roomId });
     };
+
 
     // Select word
     const handleSelectWord = (word) => {
         socket.emit("select-word", { roomCode: roomId, word });
     };
 
+
     // Leave room
     const handleLeaveRoom = () => {
         setShowLeaveConfirm(true);
     };
+
 
     const confirmLeaveRoom = () => {
         socket.emit("leave-room", { roomCode: roomId });
         setShowLeaveConfirm(false);
     };
 
+
     const cancelLeaveRoom = () => {
         setShowLeaveConfirm(false);
     };
+
 
     // Get current drawer name
     const getCurrentDrawerName = () => {
@@ -468,8 +536,10 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
         return drawer ? drawer.name : "";
     };
 
+
     // Check if current player is drawer
     const isCurrentPlayerDrawer = currentPlayer?.id === currentDrawer;
+
 
     // Show loading state while reconnecting
     if (isReconnecting) {
@@ -479,6 +549,7 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
             </div>
         );
     }
+
 
     // show invalid screen, if someone tries to sneak-in the room without joining the room
     if (invalidUser) {
@@ -492,9 +563,11 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
         );
     }
 
+
     return (
         <div className="fixed inset-0 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: 'url(/bgImg.jpg)' }}>
             <div className="absolute inset-0 bg-black/20"></div>
+
 
             {/* Leave Room Confirmation Modal */}
             {showLeaveConfirm
@@ -523,6 +596,7 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                 </div>
             }
 
+
             {/* Word Selection Popup */}
             {
                 gamePhase === "word-selection" && isCurrentPlayerDrawer &&
@@ -549,6 +623,7 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                     </div>
                 )}
 
+
             {/* Turn End Popup */}
             {gamePhase === "turn-end" && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
@@ -574,6 +649,7 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                 </div>
             )}
 
+
             {/* Game End Popup */}
             {gamePhase === "game-end" && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
@@ -586,7 +662,7 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                             {leaderboard.slice(0, 3).map((player, index) => (
                                 <div
                                     key={player.id}
-                                    className={`flex items-center justify-between p-4 rounded-lg 
+                                    className={`flex items-center justify-between p-4 rounded-lg
                                         ${index === 0 ? 'bg-yellow-600' :
                                             index === 1 ? 'bg-gray-400' :
                                                 index === 2 ? 'bg-orange-600' :
@@ -605,14 +681,15 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                             ))}
                         </div>
                         <button
-                            onClick={() => setGamePhase("lobby")}
+                            // onClick={() => setGamePhase("lobby")}
                             className="w-full bg-linear-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 cursor-pointer text-white font-bold py-3 rounded-lg transition-all"
                         >
-                            Back to Lobby
+                            Returning to Lobby…
                         </button>
                     </div>
                 </div>
             )}
+
 
             {/* Desktop Layout */}
             <div className="relative hidden lg:flex flex-col h-full p-4 gap-4">
@@ -620,6 +697,7 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                     !gameStarted &&
                     <Header roomId={roomId} />
                 }
+
 
                 {/* Game Info Bar */}
                 {
@@ -649,6 +727,7 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                                 </div>
                             </div>
 
+
                             {/* logo and copy button */}
                             <div className="flex-[50%]">
                                 <h1 className="text-3xl sm:text-5xl font-bold text-center  bg-linear-to-r from-purple-600 via-pink-500 to-pink-600 bg-clip-text text-transparent">
@@ -668,6 +747,7 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                                 </div>
                             </div>
 
+
                             {/* timer and word */}
                             <div className="flex-[25%] flex justify-between gap-6 shrink-0 items-center">
                                 {gamePhase === "drawing" && (
@@ -680,7 +760,12 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                                                 </span>
                                             </p>
                                         ) : (
-                                            <span className="font-semibold text-white">Word: {wordHint}</span>
+                                            <p className="font-semibold text-white">Word:
+                                                {" "}
+                                                <span className="text-purple-400 tracking-wider pl-1">
+                                                    {wordHint}
+                                                </span>
+                                            </p>
                                         )}
                                     </div>
                                 )}
@@ -694,11 +779,12 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                                     }
                                 </div>
                             </div>
-
                         </div>
                     )
                 }
 
+
+                {/* Game Screen */}
                 <div className="flex gap-4 flex-1 min-h-0">
                     {/* PLAYERS PANEL */}
                     <div className="bg-slate-800/90 backdrop-blur-sm flex flex-col w-72 rounded-xl overflow-hidden border border-white/20 shadow-2xl">
@@ -720,6 +806,7 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                             </div>
                         </div>
 
+
                         <div className="flex-1 overflow-y-auto p-3 space-y-2">
                             {players.map((player) => (
                                 <PlayerCard
@@ -732,6 +819,7 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                                 />
                             ))}
                         </div>
+
 
                         {!gameStarted && (
                             <div className="p-3 border-t border-white/20 bg-slate-900/50">
@@ -746,18 +834,30 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                         )}
                     </div>
 
+
                     {/* CANVAS */}
                     <div className="bg-slate-800/90 backdrop-blur-sm flex-1 rounded-xl overflow-hidden border border-white/20 shadow-2xl">
+                        {!gameStarted && currentPlayer?.id !== hostId && (
+                            <WaitingScreen />
+                        )}
+
+
+                        {!gameStarted && currentPlayer?.id === hostId && (
+                            <SettingsScreen
+                                roomCode={roomId}
+                                playerId={currentPlayer?.id}
+                                hostId={hostId}
+                            />
+                        )}
                         {
-                            (!gameStarted && currentPlayer?.id !== hostId) ?
-                                <WaitingScreen />
-                                :
-                                <DrawingBoard
-                                    roomId={roomId}
-                                    canDraw={isCurrentPlayerDrawer && gamePhase === "drawing"}
-                                />
+                            gameStarted &&
+                            <DrawingBoard
+                                roomId={roomId}
+                                canDraw={isCurrentPlayerDrawer && gamePhase === "drawing"}
+                            />
                         }
                     </div>
+
 
                     {/* CHAT PANEL */}
                     <div className="bg-slate-800/90 backdrop-blur-sm flex flex-col w-80 rounded-xl overflow-hidden border border-white/20 shadow-2xl">
@@ -765,6 +865,7 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                             <MessageCircle className="w-5 h-5 text-blue-400" />
                             <span className="text-lg font-semibold uppercase">Chat</span>
                         </div>
+
 
                         <div ref={desktopChatRef} className="flex-1 overflow-y-auto p-3 space-y-3 min-h-0">
                             {messages.map((msg, index) => {
@@ -813,11 +914,13 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                             })}
                         </div>
 
+
                         {/* message input  */}
                         <div className="p-3 border-t border-white/20 bg-slate-900/50 shrink-0">
                             {/* if current player is drawer , dont show player the message input */}
                             {
                                 (!isCurrentPlayerDrawer) ?
+
 
                                     <div className="flex gap-2">
                                         <input
@@ -825,7 +928,7 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                                             value={messageInput}
                                             onChange={(e) => setMessageInput(e.target.value)}
                                             onKeyPress={handleKeyPress}
-                                            className="bg-white w-full px-3 font-medium py-2 rounded-lg border-none outline-none focus:ring-2 focus:ring-blue-400 transition-all"
+                                            className="bg-white w-full text-sm px-3 font-medium py-2 rounded-lg border-none outline-none focus:ring-2 focus:ring-blue-400 transition-all"
                                             placeholder={gamePhase === "drawing" && !isCurrentPlayerDrawer ? "Guess the word..." : "Type a message..."}
                                         />
                                         <button
@@ -847,92 +950,241 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                 </div>
             </div>
 
-            {/* job left - reponsive managment */}
+
             {/* Mobile Layout - Similar structure with responsive adjustments */}
             <div className="relative lg:hidden flex flex-col h-full">
-                {/* Mobile implementation similar to desktop but with adjusted sizing */}
-                <div className="shrink-0 p-3">
-                    <Header roomId={roomId} />
-                </div>
-
-                {gameStarted && gamePhase !== "game-end" && (
-                    <div className="shrink-0 px-3 mb-2">
-                        <div className="bg-slate-800/90 backdrop-blur-sm rounded-lg p-3 border border-white/20">
-                            <div className="flex items-center justify-between text-white text-sm">
-                                <span className="font-semibold truncate">
-                                    {getCurrentDrawerName()} drawing
-                                </span>
-                                {timeLeft > 0 && (
-                                    <div className="flex items-center gap-1 bg-slate-900/50 px-2 py-1 rounded">
-                                        <Clock className="w-4 h-4 text-yellow-400" />
-                                        <span className="text-yellow-400 font-bold">{timeLeft}s</span>
-                                    </div>
-                                )}
+                {/* Name Header */}
+                <>
+                    {
+                        !gameStarted ?
+                            <div className="shrink-0 p-3">
+                                <Header roomId={roomId} />
                             </div>
-                            {gamePhase === "drawing" && (
-                                <div className="text-white text-xs mt-1">
-                                    {isCurrentPlayerDrawer ? `Your word: ${selectedWord}` : `Word: ${wordHint}`}
+                            :
+                            <div className="py-4">
+                                <h1 className="text-3xl font-bold text-center  bg-linear-to-r from-purple-600 via-pink-500 to-pink-600 bg-clip-text text-transparent">
+                                    DRAWRUSH
+                                </h1>
+                            </div>
+                    }
+                </>
+
+
+                {/* Game Info Bar */}
+                {
+                    gameStarted && gamePhase !== "game-end" && (
+                        <div className="shrink-0 px-3 pb-3">
+                            <div className="bg-white/10 backdrop-blur-md rounded-md md:rounded-xl shadow-2xl p-2 border border-pink-600 flex items-center justify-between text-xs gap-6 flex-wrap">
+                                {/* round and current drawer name */}
+                                <div className="flex flex-col items-start justify-center gap-y-2 text-white">
+                                    <div className="flex items-center gap-2">
+                                        <Palette className="w-5 h-5 text-purple-400" />
+                                        <p className="font-semibold">
+                                            Drawing:
+                                            {" "}
+                                            <span className="text-purple-400">
+                                                {truncateText(capitalizeFirst(getCurrentDrawerName()), 12)}
+                                            </span>
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Trophy className="w-5 h-5 text-yellow-400" />
+                                        <p className="font-semibold">
+                                            Round
+                                            {" "}
+                                            <span className="text-purple-400">
+                                                {currentRound == 0 ? 1 : currentRound}/{maxRounds}
+                                            </span>
+                                        </p>
+                                    </div>
                                 </div>
+
+
+                                {/* timer and word */}
+                                <div className="flex-1 flex flex-col gap-y-2 shrink-0 items-start justify-center">
+                                    {gamePhase === "drawing" && (
+                                        <div className="flex items-center gap-2 flex-1">
+                                            {isCurrentPlayerDrawer ? (
+                                                <p className="font-semibold text-white ">Your word:
+                                                    {" "}
+                                                    <span className="text-purple-400 underline tracking-wider">
+                                                        {capitalizeFirst(selectedWord)}
+                                                    </span>
+                                                </p>
+                                            ) : (
+                                                <p className="font-semibold text-white">Word:
+                                                    {" "}
+                                                    <span className="text-purple-400 tracking-wider pl-1">
+                                                        {wordHint}
+                                                    </span>
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
+                                    <div className="flex items-center justify-center gap-2 bg-slate-900/50 px-2 py-1 rounded-lg ">
+                                        <Clock className="w-4 h-4 text-yellow-400" />
+                                        {
+                                            timeLeft > 0 ?
+                                                <span className="text-yellow-400 font-bold text-base">{timeLeft}s</span>
+                                                :
+                                                <span className="text-yellow-400 font-semibold">Waiting</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )
+                }
+
+
+                {/* Game Secion- Drawing board */}
+                {
+                    !gameStarted &&
+                    <div className="shrink-0 px-3">
+                        <div className="bg-slate-800/90 backdrop-blur-sm flex-1 rounded-xl overflow-hidden border border-white/20 shadow-2xl">
+                            {!gameStarted && currentPlayer?.id !== hostId && (
+                                <div style={{ height: '35vh', minHeight: '280px' }}>
+                                    <WaitingScreen />
+                                </div>
+                            )}
+
+
+                            {!gameStarted && currentPlayer?.id === hostId && (
+                                <SettingsScreen
+                                    roomCode={roomId}
+                                    playerId={currentPlayer?.id}
+                                    hostId={hostId}
+                                />
                             )}
                         </div>
                     </div>
-                )}
-
-                <div className="shrink-0 px-3">
-                    <div className="bg-slate-800/90 backdrop-blur-sm rounded-lg overflow-hidden border border-white/20 shadow-2xl" style={{ height: '40vh', minHeight: '280px' }}>
-                        <DrawingBoard
-                            roomId={roomId}
-                            canDraw={isCurrentPlayerDrawer && gamePhase === "drawing"}
-                        />
+                }
+                {
+                    gameStarted &&
+                    <div className="shrink-0 px-3">
+                        <div className="bg-slate-800/90 z-100 backdrop-blur-sm rounded-lg overflow-hidden border border-white/20 shadow-2xl" style={{ height: '40vh', minHeight: '280px' }}>
+                            <DrawingBoard
+                                roomId={roomId}
+                                canDraw={isCurrentPlayerDrawer && gamePhase === "drawing"}
+                            />
+                        </div>
                     </div>
-                </div>
+                }
 
+
+                {/* PLayer card and chats */}
                 <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3 min-h-0">
+                    {/* chat box */}
                     <div className="bg-slate-800/90 backdrop-blur-sm flex flex-col rounded-lg overflow-hidden border border-white/20 shadow-2xl" style={{ minHeight: '250px' }}>
+                        {/* header for chat */}
                         <div className="flex text-white items-center gap-2 border-b border-white/20 p-3 bg-slate-900/50 shrink-0">
                             <MessageCircle className="w-4 h-4 text-blue-400" />
-                            <span className="text-sm font-semibold uppercase">Chat</span>
+                            <span className=" font-semibold uppercase">Chat</span>
                         </div>
 
-                        <div ref={mobileChatRef} className="flex-1 overflow-y-auto p-2 space-y-2" style={{ minHeight: '150px', maxHeight: '300px' }}>
-                            {messages.map((msg, index) => (
-                                <MessageBox
-                                    key={`${msg.time}-${index}`}
-                                    SenderName={msg.senderName}
-                                    message={msg.message}
-                                    isOwnMessage={msg.senderName === currentPlayer?.name}
-                                />
-                            ))}
+
+                        {/* display messages */}
+                        <div ref={mobileChatRef} className="flex-1 overflow-y-auto p-2 space-y-2" style={{ minHeight: '200px', maxHeight: '350px' }}>
+                            {messages.map((msg, index) => {
+                                if (msg?.type == "player-joined") {
+                                    return (
+                                        <PlayerJoined
+                                            key={index}
+                                            message={msg?.message}
+                                        />
+                                    )
+                                }
+                                else if (msg?.type == "player-guessed") {
+                                    return (
+                                        <PlayerGuessed
+                                            key={index}
+                                            message={msg?.message}
+                                        />
+                                    )
+                                }
+                                else if (msg?.type == "updates") {
+                                    return (
+                                        <Updates
+                                            key={index}
+                                            message={msg?.message}
+                                        />
+                                    )
+                                }
+                                else if (msg?.type == "game-ended") {
+                                    return (
+                                        <GameEndedPlayersLeft
+                                            key={index}
+                                            message={msg?.message}
+                                        />
+                                    )
+                                }
+                                else {
+                                    return (
+                                        <MessageBox
+                                            key={`${msg.time}-${index}`}
+                                            SenderName={msg.senderName}
+                                            message={msg.message}
+                                            isOwnMessage={msg.senderName === currentPlayer?.name}
+                                        />
+                                    )
+                                }
+                            })}
                         </div>
 
-                        <div className="p-2 border-t border-white/20 bg-slate-900/50 shrink-0">
-                            <div className="flex gap-2">
-                                <input
-                                    type="text"
-                                    value={messageInput}
-                                    onChange={(e) => setMessageInput(e.target.value)}
-                                    onKeyPress={handleKeyPress}
-                                    className="bg-white w-full px-3 font-medium py-2 text-sm rounded-lg border-none outline-none focus:ring-2 focus:ring-blue-400 transition-all"
-                                    placeholder={gamePhase === "drawing" && !isCurrentPlayerDrawer ? "Guess..." : "Type..."}
-                                />
+
+                        {/* input message */}
+                        <div className="p-3 border-t border-white/20 bg-slate-900/50 shrink-0">
+                            {/* if current player is drawer , dont show player the message input */}
+                            {
+                                (!isCurrentPlayerDrawer) ?
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={messageInput}
+                                            onChange={(e) => setMessageInput(e.target.value)}
+                                            onKeyPress={handleKeyPress}
+                                            className="bg-white w-full text-sm px-3 font-medium py-2 rounded-lg border-none outline-none focus:ring-2 focus:ring-blue-400 transition-all"
+                                            placeholder={gamePhase === "drawing" && !isCurrentPlayerDrawer ? "Guess the word..." : "Type a message..."}
+                                        />
+                                        <button
+                                            onClick={handleSendMessage}
+                                            className="px-3 text-white bg-blue-500 hover:bg-blue-600 rounded-lg cursor-pointer transition-all flex items-center justify-center shadow-lg hover:shadow-xl"
+                                        >
+                                            <SendHorizontal className="w-5 h-5" />
+                                        </button>
+                                    </div>
+                                    :
+                                    <div className="py-2">
+                                        <p className="text-slate-300 text-center text-sm">
+                                            Chat is disabled while drawing.
+                                        </p>
+                                    </div>
+                            }
+                        </div>
+                    </div>
+
+
+                    <div className="bg-slate-800/90 backdrop-blur-sm flex flex-col rounded-lg overflow-hidden border border-white/20 shadow-2xl" style={{ minHeight: '250px' }}>
+
+
+                        <div className="flex text-white items-center justify-between gap-2 border-b border-white/20 p-4 bg-slate-900/50">
+                            <div className="flex justify-center items-center gap-2">
+                                <Gamepad2 className="w-4 h-4 text-purple-400" />
+                                <span className="font-semibold uppercase">Players</span>
+                                <span className="ml-auto bg-purple-500 text-white text-xs px-2 py-1 rounded-full">
+                                    {players.length}
+                                </span>
+                            </div>
+                            <div>
                                 <button
-                                    onClick={handleSendMessage}
-                                    className="px-3 text-white bg-blue-500 hover:bg-blue-600 rounded-lg cursor-pointer transition-all flex items-center justify-center shadow-lg hover:shadow-xl"
+                                    onClick={handleLeaveRoom}
+                                    className={`px-3 py-1.5 rounded-lg tracking-wider text-sm bg-red-700 text-white hover:bg-red-600 transition font-semibold cursor-pointer`}
                                 >
-                                    <SendHorizontal className="w-4 h-4" />
+                                    Leave
                                 </button>
                             </div>
                         </div>
-                    </div>
 
-                    <div className="bg-slate-800/90 backdrop-blur-sm flex flex-col rounded-lg overflow-hidden border border-white/20 shadow-2xl" style={{ minHeight: '200px' }}>
-                        <div className="flex text-white items-center gap-2 border-b border-white/20 p-3 bg-slate-900/50">
-                            <Gamepad2 className="w-4 h-4 text-purple-400" />
-                            <span className="text-sm font-semibold uppercase">Players</span>
-                            <span className="ml-auto bg-purple-500 text-white text-xs px-2 py-1 rounded-full">
-                                {players.length}
-                            </span>
-                        </div>
 
                         <div className="flex-1 overflow-y-auto p-2 space-y-2" style={{ minHeight: '100px', maxHeight: '250px' }}>
                             {players.map((player) => (
@@ -946,6 +1198,7 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                                 />
                             ))}
                         </div>
+
 
                         {!gameStarted && (
                             <div className="p-2 border-t border-white/20 bg-slate-900/50">
@@ -966,5 +1219,11 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
 };
 
 
+
+
 export default GameLobby;
+
+
+
+
 
