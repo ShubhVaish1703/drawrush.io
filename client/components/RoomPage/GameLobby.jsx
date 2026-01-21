@@ -26,6 +26,7 @@ import GameEndedPlayersLeft from "./ChatUpdates/GameEndedPlayersLeft";
 import WaitingScreen from "./LobbyComponents/WaitingScreen";
 // import VoiceChat from "./VoiceChat/VoiceChat";
 import SettingsScreen from "./LobbyComponents/SettingsScreen";
+import HintDialog from "./LobbyComponents/HintDialog";
 
 const GameLobby = ({ roomId }) => { // Added playerName prop
     const [players, setPlayers] = useState([]);
@@ -47,6 +48,7 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
     const [wordOptions, setWordOptions] = useState([]);
     const [selectedWord, setSelectedWord] = useState(null);
     const [wordHint, setWordHint] = useState("");
+    const [aiHint, setAiHint] = useState("");
     const [timeLeft, setTimeLeft] = useState(0);
     const [correctGuessers, setCorrectGuessers] = useState([]);
     const [revealedWord, setRevealedWord] = useState("");
@@ -192,9 +194,10 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
         };
 
         // Drawing phase start
-        const handleDrawingPhaseStart = ({ wordHint, timeLimit }) => {
+        const handleDrawingPhaseStart = ({ wordHint, timeLimit, aiHint }) => {
             setGamePhase("drawing");
             setWordHint(wordHint);
+            setAiHint(aiHint);
             setTimeLeft(Math.floor(timeLimit / 1000));
             setWordOptions([]);
         };
@@ -683,12 +686,15 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                                                 </span>
                                             </p>
                                         ) : (
-                                            <p className="font-semibold text-white">Word:
-                                                {" "}
-                                                <span className="text-purple-400 tracking-wider pl-1">
-                                                    {wordHint}
-                                                </span>
-                                            </p>
+                                            <div className="flex flex-col gap-2">
+                                                <p className="font-semibold text-white">Word:
+                                                    {" "}
+                                                    <span className="text-purple-400 text-sm tracking-wider pl-1">
+                                                        {wordHint}
+                                                    </span>
+                                                </p>
+                                                <HintDialog hint={aiHint} />
+                                            </div>
                                         )}
                                     </div>
                                 )}
@@ -931,23 +937,28 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                                                     </span>
                                                 </p>
                                             ) : (
-                                                <p className="font-semibold text-white">Word:
-                                                    {" "}
-                                                    <span className="text-purple-400 tracking-wider pl-1">
-                                                        {wordHint}
-                                                    </span>
-                                                </p>
+                                                <div className="flex gap-2">
+                                                    <p className="font-semibold text-white">Word:
+                                                        {" "}
+                                                        <span className="text-purple-400 tracking-wider pl-1">
+                                                            {wordHint}
+                                                        </span>
+                                                    </p>
+                                                </div>
                                             )}
                                         </div>
                                     )}
-                                    <div className="flex items-center justify-center gap-2 bg-slate-900/50 px-2 py-1 rounded-lg ">
-                                        <Clock className="w-4 h-4 text-yellow-400" />
-                                        {
-                                            timeLeft > 0 ?
-                                                <span className="text-yellow-400 font-bold text-base">{timeLeft}s</span>
-                                                :
-                                                <span className="text-yellow-400 font-semibold">Waiting</span>
-                                        }
+                                    <div className="flex justify-between items-center gap-2">
+                                        <div className="flex items-center justify-center gap-2 bg-slate-900/50 px-2 py-1 rounded-lg ">
+                                            <Clock className="w-4 h-4 text-yellow-400" />
+                                            {
+                                                timeLeft > 0 ?
+                                                    <span className="text-yellow-400 font-bold text-base">{timeLeft}s</span>
+                                                    :
+                                                    <span className="text-yellow-400 font-semibold">Waiting</span>
+                                            }
+                                        </div>
+                                        <HintDialog hint={aiHint} />
                                     </div>
                                 </div>
                             </div>

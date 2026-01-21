@@ -1,9 +1,10 @@
+require("dotenv").config();
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const { v4: uuidv4 } = require("uuid");
 const { getRandomWords } = require("./words");
-const { createWordHint } = require("./utils/utils");
+const { createWordHint, generateHint } = require("./utils/utils");
 
 const app = express();
 const server = http.createServer(app);
@@ -200,10 +201,10 @@ const startNextTurn = (roomCode) => {
     }
 
     // Auto-select word after 10 seconds if not selected
-    const timer = setTimeout(() => {
+    const timer = setTimeout(async () => {
         if (room.gamePhase === "word-selection") {
             const randomWord = room.wordOptions[Math.floor(Math.random() * room.wordOptions.length)];
-            selectWord(roomCode, randomWord);
+            await selectWord(roomCode, randomWord);
         }
     }, WORD_SELECTION_TIME);
 
@@ -212,7 +213,7 @@ const startNextTurn = (roomCode) => {
 }
 
 // Handle word selection
-const selectWord = (roomCode, word) => {
+const selectWord = async (roomCode, word) => {
     const room = rooms.get(roomCode);
     if (!room || room.gamePhase !== "word-selection") return;
 
@@ -228,6 +229,7 @@ const selectWord = (roomCode, word) => {
 
     // Create word hint (e.g., "apple" -> "_ _ _ l _")
     const wordHint = createWordHint(word);
+    const ai_hint = await generateHint(word);
 
     // Get drawing time in milliseconds from settings
     const DRAWING_TIME = room.settings.roundDuration * 1000;
@@ -236,6 +238,7 @@ const selectWord = (roomCode, word) => {
     io.to(roomCode).emit("drawing-phase-start", {
         wordLength: word.length,
         wordHint: wordHint,
+        aiHint: ai_hint,
         timeLimit: DRAWING_TIME
     });
 
@@ -743,7 +746,7 @@ io.on("connection", (socket) => {
     })
 
     // Word selection
-    socket.on("select-word", ({ roomCode, word }) => {
+    socket.on("select-word", async ({ roomCode, word }) => {
         const room = rooms.get(roomCode);
         if (!room) return;
 
@@ -752,7 +755,7 @@ io.on("connection", (socket) => {
 
         if (!room.wordOptions.includes(word)) return;
 
-        selectWord(roomCode, word);
+        await selectWord(roomCode, word);
     });
 
     // Fetch players
@@ -917,7 +920,7 @@ io.on("connection", (socket) => {
 });
 
 // Health check
-app.get("/", (req, res) => {
+app.get("/", async (req, res) => {
     res.json({
         status: "Server is healthy",
         success: true,
