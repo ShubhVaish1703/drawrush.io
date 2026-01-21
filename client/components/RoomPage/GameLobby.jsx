@@ -687,7 +687,11 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                                             </p>
                                         ) : (
                                             <div className="flex flex-col gap-2">
-                                                <p className="font-semibold text-white">Word:
+                                                <p className="font-semibold text-white">Word
+                                                    {" "}(
+                                                    {wordHint?.replace(/\s+/g, '')?.length}
+                                                    ){" "}
+                                                    :
                                                     {" "}
                                                     <span className="text-purple-400 text-sm tracking-wider pl-1">
                                                         {wordHint}
@@ -938,7 +942,11 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                                                 </p>
                                             ) : (
                                                 <div className="flex gap-2">
-                                                    <p className="font-semibold text-white">Word:
+                                                    <p className="font-semibold text-white">Word
+                                                        {" "}(
+                                                        {wordHint?.replace(/\s+/g, '')?.length}
+                                                        ){" "}
+                                                        :
                                                         {" "}
                                                         <span className="text-purple-400 tracking-wider pl-1">
                                                             {wordHint}
