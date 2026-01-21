@@ -3,10 +3,18 @@ import React, { useState, useEffect } from 'react';
 import { Settings, X, Lightbulb } from 'lucide-react';
 import { createPortal } from 'react-dom';
 
-const HintDialog = ({ hint }) => {
+const HintDialog = ({ hint, timeLeft }) => {
+    // Check if hint should be shown (only when time <= 20 seconds)
+    const canShowHint = timeLeft <= 20 && timeLeft > 0;
+    // Don't render button if time is not in the valid range
+    if (!canShowHint) {
+        return null;
+    }
+
     const [showHint, setShowHint] = useState(false);
     const [animateHint, setAnimateHint] = useState(false);
     const [mounted, setMounted] = useState(false);
+
 
     // Set mounted to true after component mounts (client-side only)
     useEffect(() => {

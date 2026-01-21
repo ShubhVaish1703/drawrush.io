@@ -693,7 +693,7 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                                                         {wordHint}
                                                     </span>
                                                 </p>
-                                                <HintDialog hint={aiHint} />
+                                                <HintDialog hint={aiHint} timeLeft={timeLeft} />
                                             </div>
                                         )}
                                     </div>
@@ -958,7 +958,7 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                                                     <span className="text-yellow-400 font-semibold">Waiting</span>
                                             }
                                         </div>
-                                        <HintDialog hint={aiHint} />
+                                        <HintDialog hint={aiHint} timeLeft={timeLeft} />
                                     </div>
                                 </div>
                             </div>
