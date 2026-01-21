@@ -57,6 +57,7 @@ const createRoom = (hostName, playerId, socketId) => {
             maxPlayers: 8,
             roundDuration: 60, // in seconds
             maxRounds: 3,
+            difficulty: "easy", // easy, medium, hard
         },
         messages: [],//msg store here
         currentDrawer: null,
@@ -179,7 +180,7 @@ const startNextTurn = (roomCode) => {
     room.currentDrawer = currentDrawer.id;
 
     // Generate 3 random words
-    room.wordOptions = getRandomWords();
+    room.wordOptions = getRandomWords(room.settings.difficulty);
     room.gamePhase = "word-selection";
     room.turnStartTime = Date.now();
 
@@ -578,7 +579,7 @@ io.on("connection", (socket) => {
         }
 
         // Validate and update settings
-        const { maxPlayers, roundDuration, maxRounds } = settings;
+        const { maxPlayers, roundDuration, maxRounds, difficulty } = settings;
 
         // Validate maxPlayers
         if (maxPlayers && maxPlayers >= 4 && maxPlayers <= 10) {
@@ -603,13 +604,18 @@ io.on("connection", (socket) => {
             room.settings.maxRounds = maxRounds;
         }
 
+        // Validate difficulty (easy, medium, hard)
+        if (difficulty && ['easy', 'medium', 'hard'].includes(difficulty)) {
+            room.settings.difficulty = difficulty;
+        }
+
         // Broadcast updated settings to all players in room
         io.to(roomCode).emit("settings-updated", {
             settings: room.settings,
             updatedBy: player.name
         });
 
-        console.log(`Settings updated in room ${roomCode}:`, room.settings);
+        // console.log(`Settings updated in room ${roomCode}:`, room.settings);
     })
 
     // Start game
