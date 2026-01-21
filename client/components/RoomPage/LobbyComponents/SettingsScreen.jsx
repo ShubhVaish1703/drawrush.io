@@ -1,6 +1,6 @@
 'use client'
 import React, { useState, useEffect } from 'react';
-import { Settings, Users, Clock, Trophy, X } from 'lucide-react';
+import { Settings, Users, Clock, Trophy, X, Zap } from 'lucide-react';
 import { initSocket } from '@/socket/socket';
 import { createPortal } from 'react-dom';
 
@@ -9,7 +9,8 @@ const SettingsScreen = ({ roomCode, playerId, hostId }) => {
     const [settings, setSettings] = useState({
         maxPlayers: 8,
         roundDuration: 60,
-        maxRounds: 3
+        maxRounds: 3,
+        difficulty: 'easy',
     });
     const [showSettings, setShowSettings] = useState(false);
     const [animateSettings, setAnimateSettings] = useState(false);
@@ -34,7 +35,7 @@ const SettingsScreen = ({ roomCode, playerId, hostId }) => {
             setTempSettings(data.settings);
             // Show notification if not the one who updated
             if (data.updatedBy) {
-                console.log(`Settings updated by ${data.updatedBy}`);
+                // console.log(`Settings updated by ${data.updatedBy}`);
             }
         };
 
@@ -180,6 +181,26 @@ const SettingsScreen = ({ roomCode, playerId, hostId }) => {
                             Total number of rounds in the game
                         </p>
                     </div>
+
+                    {/* Difficulty Level */}
+                    <div>
+                        <label className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
+                            <Zap className="w-4 h-4" />
+                            Difficulty Level
+                        </label>
+                        <select
+                            value={tempSettings.difficulty}
+                            onChange={(e) => handleSettingChange('difficulty', e.target.value)}
+                            className="w-full text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:outline-none"
+                        >
+                            <option value="easy">Easy</option>
+                            <option value="medium">Medium</option>
+                            <option value="hard">Hard</option>
+                        </select>
+                        <p className="text-xs text-slate-500 mt-1">
+                            Word complexity and challenge level
+                        </p>
+                    </div>
                 </div>
 
                 <div className="p-4 border-t border-slate-200 flex gap-2">
@@ -232,6 +253,13 @@ const SettingsScreen = ({ roomCode, playerId, hostId }) => {
                                 Total Rounds:
                             </span>
                             <span className="font-semibold">{settings.maxRounds}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span className="flex items-center gap-2 font-medium tracking-wide">
+                                <Zap className="w-4 h-4" />
+                                Difficulty:
+                            </span>
+                            <span className="font-semibold capitalize">{settings.difficulty}</span>
                         </div>
                     </div>
                 </div>
