@@ -16,7 +16,6 @@ export default function DrawRush() {
 
     useEffect(() => {
         const socket = initSocket();
-
         socket.on("connect", () => {
             // console.log("Connected:", socket.id);
         });
@@ -57,10 +56,10 @@ export default function DrawRush() {
             setErrors({ name: 'Name should be less than 20 characters.', roomId: '' });
             return;
         }
-
         const socket = initSocket();
         socket.emit("create-room", { playerName: name.trim() });
     };
+
 
     const handleJoinRoom = (e) => {
         e.preventDefault();
@@ -88,6 +87,22 @@ export default function DrawRush() {
         });
     };
 
+
+    const handleKeyPress = (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+
+            // If both name and roomId are filled, join room
+            if (name.trim() && roomId.trim()) {
+                handleJoinRoom(e);
+            }
+            // If only name is filled, create room
+            else if (name.trim() && !roomId.trim()) {
+                handleCreateRoom(e);
+            }
+        }
+    };
+
     return (
         <div
             className="min-h-screen flex flex-col items-center justify-center p-4 relative bg-cover bg-center bg-no-repeat"
@@ -97,7 +112,6 @@ export default function DrawRush() {
             <div className='w-[95vw] absolute top-5'>
                 <Header />
             </div>
-
             <div className="border border-pink-600 rounded-md md:rounded-3xl bg-white/10 backdrop-blur-md p-4 shadow-2xl w-full max-w-md relative z-10">
                 <h1 className="text-2xl flex justify-center items-center gap-2 md:text-3xl  font-bold text-center mb-4 sm:mb-6 pb-2 bg-linear-to-r from-purple-600 via-pink-500 to-pink-600 bg-clip-text text-transparent border-b-2 border-pink-600">
                     CREATE
@@ -113,6 +127,7 @@ export default function DrawRush() {
                             type="text"
                             placeholder="Enter name"
                             value={name}
+                            onKeyPress={handleKeyPress}
                             onChange={(e) => {
                                 setName(e.target.value);
                                 if (errors.name) setErrors({ ...errors, name: '' });
@@ -125,12 +140,14 @@ export default function DrawRush() {
                         )}
                     </div>
 
+
                     {mode === 'join' && (
                         <div>
                             <input
                                 type="text"
                                 placeholder="Enter room id"
                                 value={roomId}
+                                onKeyPress={handleKeyPress}
                                 onChange={(e) => {
                                     setRoomId(e.target.value);
                                     if (errors.roomId) setErrors({ ...errors, roomId: '' });
@@ -166,7 +183,6 @@ export default function DrawRush() {
                     </div>
                 </div>
             </div>
-
             <div className='w-[95vw] absolute bottom-5'>
                 <p className='text-center text-slate-300 text-sm flex flex-col gap-2'>
                     <span>
@@ -183,3 +199,4 @@ export default function DrawRush() {
         </div>
     );
 }
+
