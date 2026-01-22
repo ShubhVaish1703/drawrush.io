@@ -197,9 +197,9 @@ const VoiceChat = ({ roomCode, playerId, isCurrentPlayerDrawer }) => {
     /* ================= EFFECTS ================= */
 
     // Drawer → force mic off
-    useEffect(() => {
-        if (isCurrentPlayerDrawer) stopMic();
-    }, [isCurrentPlayerDrawer, stopMic]);
+    // useEffect(() => {
+    //     if (isCurrentPlayerDrawer) stopMic();
+    // }, [isCurrentPlayerDrawer, stopMic]);
 
     // Socket wiring
     useEffect(() => {
@@ -229,19 +229,22 @@ const VoiceChat = ({ roomCode, playerId, isCurrentPlayerDrawer }) => {
 
     return (
         <div className="flex justify-start items-center gap-2">
-            {!isCurrentPlayerDrawer && (
-                <button
-                    className={`p-2 rounded-full transition-all cursor-pointer
+            {
+                true
+                // !isCurrentPlayerDrawer 
+                && (
+                    <button
+                        className={`p-2 rounded-full transition-all cursor-pointer
                     ${isMicOn
-                            ? "bg-green-500 hover:bg-green-600 text-white"
-                            : "bg-gray-200 hover:bg-gray-300 text-gray-700"
-                        }`}
-                    title={isMicOn ? "Turn off microphone" : "Turn on microphone"}
-                    onClick={isMicOn ? stopMic : startMic}
-                >
-                    {isMicOn ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
-                </button>
-            )}
+                                ? "bg-green-500 hover:bg-green-600 text-white"
+                                : "bg-gray-200 hover:bg-gray-300 text-gray-700"
+                            }`}
+                        title={isMicOn ? "Turn off microphone" : "Turn on microphone"}
+                        onClick={isMicOn ? stopMic : startMic}
+                    >
+                        {isMicOn ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
+                    </button>
+                )}
 
             <button
                 onClick={() => {
