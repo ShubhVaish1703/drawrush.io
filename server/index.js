@@ -421,6 +421,40 @@ const checkGuess = (roomCode, playerId, guess) => {
     }
 }
 
+// ==================== VOICE CHAT STORAGE ====================
+// Store voice chat users separately - roomCode -> Set of socketIds
+const voiceChatUsers = new Map();
+// ==================== VOICE CHAT HELPER FUNCTIONS ====================
+// Get voice users in a room
+const getVoiceUsers = (roomCode) => {
+    if (!voiceChatUsers.has(roomCode)) {
+        voiceChatUsers.set(roomCode, new Set());
+    }
+    return voiceChatUsers.get(roomCode);
+};
+
+// Add user to voice chat
+const addVoiceUser = (roomCode, socketId) => {
+    const users = getVoiceUsers(roomCode);
+    users.add(socketId);
+};
+
+// Remove user from voice chat
+const removeVoiceUser = (roomCode, socketId) => {
+    const users = getVoiceUsers(roomCode);
+    users.delete(socketId);
+
+    // Clean up empty room entries
+    if (users.size === 0) {
+        voiceChatUsers.delete(roomCode);
+    }
+};
+// Check if user is in voice chat
+const isInVoiceChat = (roomCode, socketId) => {
+    const users = getVoiceUsers(roomCode);
+    return users.has(socketId);
+};
+
 io.on("connection", (socket) => {
     console.log('User connected: ', socket.id);
 
@@ -871,6 +905,85 @@ io.on("connection", (socket) => {
         if (!room) return;
 
         socket.emit("load-drawing", room.drawingData);
+    });
+
+    // ==================== SOCKET HANDLERS ====================
+    // When a user joins voice chat
+    socket.on("join-voice", ({ roomCode, playerId }) => {
+        const room = rooms.get(roomCode);
+        if (!room) return;
+
+        const player = room.players.find(p => p.id === playerId && p.socketId === socket.id);
+        if (!player) return;
+
+        // Add to voice chat
+        addVoiceUser(roomCode, socket.id);
+
+        // Notify all OTHER players in the room that this player joined voice
+        socket.to(roomCode).emit("voice-user-joined", {
+            playerId: playerId,
+            socketId: socket.id
+        });
+
+        // Send list of all players already in voice chat to the new joiner
+        const voiceUsers = getVoiceUsers(roomCode);
+        const voicePlayers = room.players
+            .filter(p => voiceUsers.has(p.socketId) && p.socketId !== socket.id)
+            .map(p => ({ playerId: p.id, socketId: p.socketId }));
+
+        socket.emit("voice-users-list", { users: voicePlayers });
+
+        console.log(`${player.name} joined voice chat in room ${roomCode}`);
+    });
+
+    // When a user leaves voice chat
+    socket.on("leave-voice", ({ roomCode, playerId }) => {
+        const room = rooms.get(roomCode);
+        if (!room) return;
+
+        const player = room.players.find(p => p.id === playerId);
+        if (!player) return;
+
+        // Remove from voice chat
+        removeVoiceUser(roomCode, socket.id);
+
+        // Notify all players in the room
+        io.to(roomCode).emit("voice-user-left", {
+            playerId: playerId,
+            socketId: socket.id
+        });
+
+        console.log(`${player.name} left voice chat in room ${roomCode}`);
+    });
+
+    // WebRTC Offer
+    socket.on("webrtc-offer", ({ targetSocketId, offer, senderId }) => {
+        // Forward the offer to the target peer
+        io.to(targetSocketId).emit("webrtc-offer", {
+            offer: offer,
+            senderSocketId: socket.id,
+            senderId: senderId
+        });
+    });
+
+    // WebRTC Answer
+    socket.on("webrtc-answer", ({ targetSocketId, answer, senderId }) => {
+        // Forward the answer to the target peer
+        io.to(targetSocketId).emit("webrtc-answer", {
+            answer: answer,
+            senderSocketId: socket.id,
+            senderId: senderId
+        });
+    });
+
+    // ICE Candidate
+    socket.on("webrtc-ice-candidate", ({ targetSocketId, candidate, senderId }) => {
+        // Forward ICE candidate to the target peer
+        io.to(targetSocketId).emit("webrtc-ice-candidate", {
+            candidate: candidate,
+            senderSocketId: socket.id,
+            senderId: senderId
+        });
     });
 
     // Handle disconnect
