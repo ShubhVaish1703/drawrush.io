@@ -1,5 +1,6 @@
 'use client'
 import { initSocket } from "@/socket/socket";
+import { Pipette } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 const TOOLS = {
@@ -22,6 +23,7 @@ const DrawingBoard = ({ roomId, canDraw = true }) => {
     const [isDrawing, setIsDrawing] = useState(false);
     const [start, setStart] = useState({ x: 0, y: 0 });
     const [scale, setScale] = useState(1);
+    const colorInputRef = useRef(null);
 
     const colorPalette = [
         "#000000", "#FFFFFF", "#FF0000", "#00FF00",
@@ -232,8 +234,15 @@ const DrawingBoard = ({ roomId, canDraw = true }) => {
                                 type="color"
                                 value={color}
                                 onChange={(e) => setColor(e.target.value)}
-                                className="w-7 h-7 rounded-full cursor-pointer"
+                                className="w-6 h-6 rounded-full cursor-pointer"
+                                ref={colorInputRef}
                             />
+                            <button title="Change color">
+                                <Pipette
+                                    className="text-white size-4 cursor-pointer hover:scale-110 transition"
+                                    onClick={() => colorInputRef.current.click()}
+                                />
+                            </button>
                         </div>
                     }
 
