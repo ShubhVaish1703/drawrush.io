@@ -2,6 +2,18 @@
 
 A real-time multiplayer drawing and guessing game built with Next.js, Node.js, and Socket.io. Players take turns drawing while others guess the word, similar to Pictionary.
 
+## 🔗 Live Demo
+
+- **Frontend (Vercel)**:  
+  👉 https://drawrush-io.vercel.app/
+
+- **Backend (Render)**:  
+  👉 https://draw-rush-server.onrender.com/
+
+> ⚠️ **Note**: The backend is hosted on Render and may go to sleep after inactivity.  
+> If the game doesn’t connect initially, open the backend link once to wake the server, then refresh the frontend and start playing.
+
+
 ## Features
 
 - **Real-time Multiplayer Gaming**: Play with friends using WebSocket connections
