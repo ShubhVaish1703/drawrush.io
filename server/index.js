@@ -27,7 +27,7 @@ const WORD_SELECTION_TIME = 10000; // 10 seconds
 const POINTS = {
     DRAWER: 300,
     FIRST_GUESS: 150,
-    OTHER_GUESS: 75
+    OTHER_GUESS: 100
 };
 
 // Store all rooms
@@ -274,14 +274,6 @@ const endTurn = (roomCode) => {
 
     room.gamePhase = "turn-end";
 
-    // Award points to drawer if anyone guessed
-    if (room.correctGuessers.length > 0) {
-        const drawer = room.players.find(p => p.id === room.currentDrawer);
-        if (drawer) {
-            drawer.score += POINTS.DRAWER;
-        }
-    }
-
     // Reveal the word
     io.to(roomCode).emit("turn-end", {
         word: room.currentWord,
@@ -373,7 +365,7 @@ const endGame = (roomCode) => {
 };
 
 // Check if guess is correct
-const checkGuess = (roomCode, playerId, guess) => {
+const checkGuess = (roomCode, playerId, guess, timeLeft) => {
     const room = rooms.get(roomCode);
     if (!room || room.gamePhase !== "drawing") return;
 
@@ -393,10 +385,17 @@ const checkGuess = (roomCode, playerId, guess) => {
         // Award points
         if (room.correctGuessers.length === 0) {
             // First correct guess
-            player.score += POINTS.FIRST_GUESS;
+            player.score += (POINTS.FIRST_GUESS - Math.ceil(timeLeft / 2));
+
+            // Award points to drawer if anyone guessed
+            const drawer = room.players.find(p => p.id === room.currentDrawer);
+            if (drawer) {
+                drawer.score += (POINTS.DRAWER - Math.ceil(timeLeft / 2));
+            }
+
         } else {
             // Subsequent correct guesses
-            player.score += POINTS.OTHER_GUESS;
+            player.score += (POINTS.OTHER_GUESS - Math.ceil(timeLeft / 2));
         }
 
         room.correctGuessers.push({
@@ -449,6 +448,7 @@ const removeVoiceUser = (roomCode, socketId) => {
         voiceChatUsers.delete(roomCode);
     }
 };
+
 // Check if user is in voice chat
 const isInVoiceChat = (roomCode, socketId) => {
     const users = getVoiceUsers(roomCode);
@@ -836,7 +836,7 @@ io.on("connection", (socket) => {
     });
 
     // handle chat messages
-    socket.on("send-message", ({ roomCode, message, senderName }) => {
+    socket.on("send-message", ({ roomCode, message, senderName, timeStamp }) => {
         const room = rooms.get(roomCode);
         if (!room) return;
 
@@ -845,7 +845,8 @@ io.on("connection", (socket) => {
 
         // Check if it's a guess during drawing phase
         if (room.gamePhase === "drawing") {
-            checkGuess(roomCode, player.id, message);
+            let timeLeft = room.settings.roundDuration - timeStamp;
+            checkGuess(roomCode, player.id, message, timeLeft);
 
             // Don't save guess messages to chat if they're correct
             if (message.toLowerCase().trim() === room.currentWord.toLowerCase()) {

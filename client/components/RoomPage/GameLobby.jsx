@@ -432,6 +432,7 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
             roomCode: roomId,
             message: messageInput.trim(),
             senderName: currentPlayer?.name || "Guest",
+            timeStamp: timeLeft
         };
 
         // Send to server
@@ -483,7 +484,7 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
     if (isReconnecting) {
         return (
             <div className="h-screen flex items-center justify-center bg-slate-900">
-                <div className="text-white text-xl">Reconnecting to room...</div>
+                <div className="text-white text-xl">Connecting to room...</div>
             </div>
         );
     }
