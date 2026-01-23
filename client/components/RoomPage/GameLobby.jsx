@@ -28,6 +28,7 @@ import WaitingScreen from "./LobbyComponents/WaitingScreen";
 import SettingsScreen from "./LobbyComponents/SettingsScreen";
 import HintDialog from "./LobbyComponents/HintDialog";
 import VoiceChat from "./VoiceChat/VoiceChat";
+import GameSoundEffects from "./GameSoundEffects/GameSoundEffects";
 
 const GameLobby = ({ roomId }) => { // Added playerName prop
     const [players, setPlayers] = useState([]);
@@ -502,6 +503,14 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
     return (
         <div className="fixed inset-0 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: 'url(/bgImg.jpg)' }}>
             <div className="absolute inset-0 bg-black/20"></div>
+
+            {/* Add Sound Effects Component */}
+            <GameSoundEffects
+                gamePhase={gamePhase}
+                timeLeft={timeLeft}
+                currentRound={currentRound}
+                gameStarted={gameStarted}
+            />
 
             {/* Leave Room Confirmation Modal */}
             {showLeaveConfirm
