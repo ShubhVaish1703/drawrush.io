@@ -1,104 +1,85 @@
 import { useEffect, useRef } from 'react';
 
-const GameSoundEffects = ({
-    gamePhase,
-    timeLeft,
-    gameStarted
-}) => {
-    const gameStartAudioRef = useRef(null);
-    const roundEndAudioRef = useRef(null);
-    const gameEndAudioRef = useRef(null);
-    const timerUrgentAudioRef = useRef(null);
-    const turnEndAudioRef = useRef(null);
-    const hasPlayedUrgentRef = useRef(false);
-    const prevGamePhaseRef = useRef(null);
-    const prevGameStartedRef = useRef(false);
+const GameSoundEffects = ({ gamePhase, timeLeft }) => {
+    const audiosRef = useRef({});
+    const prevPhaseRef = useRef(null);
+    const urgentPlayedRef = useRef(false);
 
-    // Initialize audio objects once
+    // 🔊 Initialize audio ONCE
     useEffect(() => {
-        gameStartAudioRef.current = new Audio('/sounds/game-start.mp3');
-        roundEndAudioRef.current = new Audio('/sounds/round-end.wav');
-        gameEndAudioRef.current = new Audio('/sounds/game-end.wav');
-        timerUrgentAudioRef.current = new Audio('/sounds/timer-urgent.mp3');
-        turnEndAudioRef.current = new Audio('/sounds/round-end.wav');
+        audiosRef.current = {
+            gameStart: new Audio('/sounds/game-start.mp3'),
+            turnEnd: new Audio('/sounds/round-end.wav'),
+            roundEnd: new Audio('/sounds/round-end.wav'),
+            gameEnd: new Audio('/sounds/game-end.wav'),
+            urgent: new Audio('/sounds/timer-urgent.mp3'),
+        };
 
-        // Set volume levels
-        if (gameStartAudioRef.current) gameStartAudioRef.current.volume = 0.5;
-        if (roundEndAudioRef.current) roundEndAudioRef.current.volume = 0.5;
-        if (gameEndAudioRef.current) gameEndAudioRef.current.volume = 0.5;
-        if (timerUrgentAudioRef.current) timerUrgentAudioRef.current.volume = 0.5;
-        if (turnEndAudioRef.current) turnEndAudioRef.current.volume = 0.5;
+        Object.values(audiosRef.current).forEach(audio => {
+            audio.volume = 0.5;
+            audio.preload = 'auto';
+        });
 
-        // Cleanup
         return () => {
-            const audios = [
-                gameStartAudioRef.current,
-                roundEndAudioRef.current,
-                gameEndAudioRef.current,
-                timerUrgentAudioRef.current,
-                turnEndAudioRef.current
-            ];
-
-            audios.forEach(audio => {
-                if (audio) {
-                    audio.pause();
-                    audio.currentTime = 0;
-                }
+            Object.values(audiosRef.current).forEach(audio => {
+                audio.pause();
+                audio.currentTime = 0;
             });
         };
     }, []);
 
-    // Play sound helper
-    const playSound = (audioRef) => {
-        if (audioRef && audioRef.current) {
-            audioRef.current.currentTime = 0;
-            audioRef.current.play().catch(err => {
-                console.log('Audio play failed:', err);
-            });
-        }
+    const stopAllSounds = () => {
+        Object.values(audiosRef.current).forEach(audio => {
+            if (!audio) return;
+            audio.pause();
+            audio.currentTime = 0;
+        });
     };
 
-    // Game start sound
-    useEffect(() => {
-        if (gameStarted && !prevGameStartedRef.current && gamePhase === 'starting') {
-            playSound(gameStartAudioRef);
-        }
-        prevGameStartedRef.current = gameStarted;
-    }, [gameStarted, gamePhase]);
+    const play = (key) => {
+        const audio = audiosRef.current[key];
+        if (!audio) return;
 
-    // Turn end sound
+        stopAllSounds();
+        audio.currentTime = 0;
+        audio.play().catch(() => { });
+    };
+
+    // 🎮 PHASE-BASED SOUNDS
     useEffect(() => {
-        if (gamePhase === 'turn-end' && prevGamePhaseRef.current !== 'turn-end') {
-            playSound(turnEndAudioRef);
+        if (gamePhase !== prevPhaseRef.current) {
+            switch (gamePhase) {
+                case 'starting':
+                    play('gameStart');
+                    break;
+                case 'turn-end':
+                    play('turnEnd');
+                    break;
+                case 'round-end':
+                    play('roundEnd');
+                    break;
+                case 'game-end':
+                    play('gameEnd');
+                    break;
+                default:
+                    break;
+            }
         }
+        prevPhaseRef.current = gamePhase;
     }, [gamePhase]);
 
-    // Round end sound
-    useEffect(() => {
-        if (gamePhase === 'round-end' && prevGamePhaseRef.current !== 'round-end') {
-            playSound(roundEndAudioRef);
-        }
-        prevGamePhaseRef.current = gamePhase;
-    }, [gamePhase]);
-
-    // Game end sound
-    useEffect(() => {
-        if (gamePhase === 'game-end') {
-            playSound(gameEndAudioRef);
-        }
-    }, [gamePhase]);
-
-    // Timer urgent sound (last 10 seconds)
+    // ⏱️ LAST 10 SECONDS WARNING
     useEffect(() => {
         if (gamePhase === 'drawing') {
-            if (timeLeft === 10 && !hasPlayedUrgentRef.current) {
-                playSound(timerUrgentAudioRef);
-                hasPlayedUrgentRef.current = true;
-            } else if (timeLeft > 10) {
-                hasPlayedUrgentRef.current = false;
+            if (timeLeft === 10 && !urgentPlayedRef.current) {
+                play('urgent');
+                urgentPlayedRef.current = true;
+            }
+            if (timeLeft > 10) {
+                urgentPlayedRef.current = false;
             }
         } else {
-            hasPlayedUrgentRef.current = false;
+            urgentPlayedRef.current = false;
         }
     }, [timeLeft, gamePhase]);
 
