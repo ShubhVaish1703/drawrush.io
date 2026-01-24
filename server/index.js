@@ -846,6 +846,10 @@ io.on("connection", (socket) => {
         // Check if it's a guess during drawing phase
         if (room.gamePhase === "drawing") {
             let timeLeft = room.settings.roundDuration - timeStamp;
+            if (timeStamp === 0) {
+                timeLeft = Math.floor(room.settings.roundDuration / 2);
+            }
+
             checkGuess(roomCode, player.id, message, timeLeft);
 
             // Don't save guess messages to chat if they're correct
