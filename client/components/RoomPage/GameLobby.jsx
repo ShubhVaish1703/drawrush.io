@@ -29,6 +29,7 @@ import SettingsScreen from "./LobbyComponents/SettingsScreen";
 import HintDialog from "./LobbyComponents/HintDialog";
 import VoiceChat from "./VoiceChat/VoiceChat";
 import GameSoundEffects from "./GameSoundEffects/GameSoundEffects";
+import SpamWarning from "./ChatUpdates/SpamWarning";
 
 const GameLobby = ({ roomId }) => { // Added playerName prop
     const [players, setPlayers] = useState([]);
@@ -56,6 +57,7 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
     const [revealedWord, setRevealedWord] = useState("");
     const [leaderboard, setLeaderboard] = useState([]);
     const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+    const [enableSendMessage, setEnableSendMessage] = useState(true);
 
     const desktopChatRef = useRef(null);
     const mobileChatRef = useRef(null);
@@ -133,12 +135,27 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
             setMessages((prev) => [...prev, data]);
         };
 
+        const handleSpamWarning = (warningMesg) => {
+            // add a temporary mesg to messages array
+            setEnableSendMessage(false);
+            const mesg = {
+                message: warningMesg,
+                type: "spam-warning"
+            }
+            setMessages((prev) => [...prev, mesg]);
+            setTimeout(() => {
+                setEnableSendMessage(true);
+            }, 3000);
+        }
+
         socket.on("chat-history", handleChatHistory);
         socket.on("receive-message", handleReceiveMessage);
+        socket.on("spam-warning", handleSpamWarning);
 
         return () => {
             socket.off("chat-history", handleChatHistory);
             socket.off("receive-message", handleReceiveMessage);
+            socket.off("spam-warning", handleSpamWarning);
         };
     }, []);
 
@@ -846,6 +863,14 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                                         />
                                     )
                                 }
+                                else if (msg?.type == "spam-warning") {
+                                    return (
+                                        <SpamWarning
+                                            key={index}
+                                            message={msg?.message}
+                                        />
+                                    )
+                                }
                                 else {
                                     return (
                                         <MessageBox
@@ -869,6 +894,7 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                                         <input
                                             type="text"
                                             value={messageInput}
+                                            disabled={enableSendMessage === false}
                                             onChange={(e) => setMessageInput(e.target.value)}
                                             onKeyPress={handleKeyPress}
                                             className="bg-white w-full text-sm px-3 font-medium py-2 rounded-lg border-none outline-none focus:ring-2 focus:ring-blue-400 transition-all"
@@ -1071,6 +1097,14 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                                         />
                                     )
                                 }
+                                else if (msg?.type == "spam-warning") {
+                                    return (
+                                        <SpamWarning
+                                            key={index}
+                                            message={msg?.message}
+                                        />
+                                    )
+                                }
                                 else {
                                     return (
                                         <MessageBox
@@ -1094,6 +1128,7 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                                             type="text"
                                             value={messageInput}
                                             onChange={(e) => setMessageInput(e.target.value)}
+                                            disabled={enableSendMessage === false}
                                             onKeyPress={handleKeyPress}
                                             className="bg-white w-full text-sm px-3 font-medium py-2 rounded-lg border-none outline-none focus:ring-2 focus:ring-blue-400 transition-all"
                                             placeholder={gamePhase === "drawing" && !isCurrentPlayerDrawer ? "Guess the word..." : "Type a message..."}

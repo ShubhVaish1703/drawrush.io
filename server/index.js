@@ -29,6 +29,8 @@ const POINTS = {
     FIRST_GUESS: 150,
     OTHER_GUESS: 100
 };
+const MESSAGE_LIMIT = 5;
+const MESSAGE_TIME_WINDOW = 3000; // 3 seconds
 
 // Store all rooms
 const rooms = new Map();
@@ -418,6 +420,24 @@ const checkGuess = (roomCode, playerId, guess, timeLeft) => {
             endTurn(roomCode);
         }
     }
+}
+// ==================== CHAT MESSAGE RATE LIMITING ====================
+// Map: userId -> timestamps[]
+const messageHistory = new Map();
+function canSendMessage(userId) {
+    const now = Date.now();
+    const history = messageHistory.get(userId) || [];
+
+    // remove old timestamps
+    const recent = history.filter(ts => now - ts < MESSAGE_TIME_WINDOW);
+
+    if (recent.length >= MESSAGE_LIMIT) {
+        return false;
+    }
+
+    recent.push(now);
+    messageHistory.set(userId, recent);
+    return true;
 }
 
 // ==================== VOICE CHAT STORAGE ====================
@@ -856,6 +876,12 @@ io.on("connection", (socket) => {
             if (message.toLowerCase().trim() === room.currentWord.toLowerCase()) {
                 return;
             }
+        }
+
+        // Rate limiting - if player is not guessing, we can apply rate limit
+        if (!canSendMessage(player.id)) {
+            socket.emit("spam-warning", "Slow down bro 😅, Don't Spam!");
+            return;
         }
 
         // Create message object

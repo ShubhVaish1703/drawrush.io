@@ -12,6 +12,7 @@ export default function DrawRush() {
     const [roomId, setRoomId] = useState(rId || '');
     const [mode, setMode] = useState(''); // 'create' or 'join'
     const [errors, setErrors] = useState({ name: '', roomId: '' });
+    const [loading, setLoading] = useState(false);
     const router = useRouter();
 
     useEffect(() => {
@@ -21,12 +22,14 @@ export default function DrawRush() {
         });
 
         socket.on("room-created", ({ code, player }) => {
+            setLoading(false);
             sessionStorage.setItem("player", JSON.stringify(player));
             sessionStorage.setItem("roomId", code);
             router.push(`/room/${code}`);
         });
 
         socket.on("room-joined", ({ room, player }) => {
+            setLoading(false);
             sessionStorage.setItem("player", JSON.stringify(player));
             sessionStorage.setItem("roomId", room.code);
             router.push(`/room/${room.code}`);
@@ -34,6 +37,7 @@ export default function DrawRush() {
 
         // Handle errors
         socket.on("error", ({ message }) => {
+            setLoading(false);
             alert(message);
         });
 
@@ -56,6 +60,7 @@ export default function DrawRush() {
             setErrors({ name: 'Name should be less than 20 characters.', roomId: '' });
             return;
         }
+        setLoading(true);
         const socket = initSocket();
         socket.emit("create-room", { playerName: name.trim() });
     };
@@ -80,6 +85,7 @@ export default function DrawRush() {
             setErrors(newErrors);
             return;
         }
+        setLoading(true);
         const socket = initSocket();
         socket.emit("join-room", {
             code: roomId.toUpperCase().trim(),
@@ -163,6 +169,7 @@ export default function DrawRush() {
 
                     <div className="flex flex-col sm:flex-row gap-3 pt-2">
                         <button
+                            disabled={loading}
                             onClick={(e) => {
                                 setMode('create');
                                 handleCreateRoom(e);
@@ -172,6 +179,7 @@ export default function DrawRush() {
                             Create room
                         </button>
                         <button
+                            disabled={loading}
                             onClick={(e) => {
                                 setMode('join');
                                 handleJoinRoom(e);
