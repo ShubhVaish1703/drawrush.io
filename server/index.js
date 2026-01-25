@@ -209,8 +209,12 @@ const startNextTurn = (roomCode) => {
 
     // Auto-select word after 10 seconds if not selected
     const timer = setTimeout(async () => {
-        if (room.gamePhase === "word-selection") {
-            const randomWord = room.wordOptions[Math.floor(Math.random() * room.wordOptions.length)];
+        const currentRoom = rooms.get(roomCode);
+        // Check room exists, still in word-selection, and no word chosen yet
+        if (currentRoom &&
+            currentRoom.gamePhase === "word-selection" &&
+            !currentRoom.currentWord) {
+            const randomWord = currentRoom.wordOptions[Math.floor(Math.random() * currentRoom.wordOptions.length)];
             await selectWord(roomCode, randomWord);
         }
     }, WORD_SELECTION_TIME);
@@ -388,20 +392,23 @@ const checkGuess = (roomCode, playerId, guess, timeLeft) => {
     if (guess.toLowerCase().trim() === room.currentWord.toLowerCase()) {
         player.hasGuessed = true;
 
+        // Calculate time penalty (ensure it's non-negative)
+        const timePenalty = Math.max(0, Math.ceil(timeLeft / 2));
+
         // Award points
         if (room.correctGuessers.length === 0) {
             // First correct guess
-            player.score += (POINTS.FIRST_GUESS - Math.ceil(timeLeft / 2));
+            player.score += Math.max(0, POINTS.FIRST_GUESS - timePenalty);
 
             // Award points to drawer if anyone guessed
             const drawer = room.players.find(p => p.id === room.currentDrawer);
             if (drawer) {
-                drawer.score += (POINTS.DRAWER - Math.ceil(timeLeft / 2));
+                drawer.score += Math.max(0, POINTS.DRAWER - timePenalty);
             }
 
         } else {
             // Subsequent correct guesses
-            player.score += (POINTS.OTHER_GUESS - Math.ceil(timeLeft / 2));
+            player.score += Math.max(0, POINTS.OTHER_GUESS - timePenalty);
         }
 
         room.correctGuessers.push({
@@ -443,6 +450,11 @@ function canSendMessage(userId) {
     messageHistory.set(userId, recent);
     return true;
 }
+const cleanupMessageHistory = (userId) => {
+    setTimeout(() => {
+        messageHistory.delete(userId);
+    }, 5 * 60 * 1000); // Clean after 5 minutes
+};
 
 // ==================== VOICE CHAT STORAGE ====================
 // Store voice chat users separately - roomCode -> Set of socketIds
@@ -596,12 +608,19 @@ io.on("connection", (socket) => {
 
         // If game is in progress, send current game state
         if (room.gameStarted) {
+            let wordHint = null;
+
+            // Generate proper word hint if in drawing phase
+            if (room.currentWord && room.gamePhase === "drawing") {
+                wordHint = createWordHint(room.currentWord);
+            }
+
             socket.emit("game-state-sync", {
                 gamePhase: room.gamePhase,
                 currentDrawer: room.currentDrawer,
                 round: room.round,
                 maxRounds: room.settings.maxRounds,
-                wordHint: room.currentWord ? room.currentWord.split('').map(() => '_').join(' ') : null,
+                wordHint: wordHint,
                 players: room.players
             });
 
@@ -736,6 +755,18 @@ io.on("connection", (socket) => {
         const player = room.players[playerIndex];
         const wasHost = player.id === room.host;
         const wasDrawing = player.id === room.currentDrawer;
+
+        // Clean up message history
+        cleanupMessageHistory(player.id);
+
+        // Remove from voice chat if in it
+        if (isInVoiceChat(roomCode, socket.id)) {
+            removeVoiceUser(roomCode, socket.id);
+            io.to(roomCode).emit("voice-user-left", {
+                playerId: player.id,
+                socketId: socket.id
+            });
+        }
 
         // Remove player from room
         room.players.splice(playerIndex, 1);
@@ -908,6 +939,9 @@ io.on("connection", (socket) => {
         const room = rooms.get(drawData.roomCode);
         if (!room) return;
 
+        // Only allow drawing during drawing phase
+        if (room.gamePhase !== "drawing") return;
+
         // Only current drawer can draw
         const player = room.players.find(p => p.socketId === socket.id);
         if (!player || player.id !== room.currentDrawer) return;
@@ -1026,6 +1060,13 @@ io.on("connection", (socket) => {
     socket.on("disconnect", () => {
         console.log("User disconnected: ", socket.id);
 
+        // Clean up voice chat first
+        for (const [roomCode, users] of voiceChatUsers.entries()) {
+            if (users.has(socket.id)) {
+                removeVoiceUser(roomCode, socket.id);
+            }
+        }
+
         // Find player and set status to offline
         for (const [code, room] of rooms.entries()) {
             const playerIndex = room.players.findIndex(p => p.socketId === socket.id);
@@ -1035,6 +1076,8 @@ io.on("connection", (socket) => {
 
                 // Set player status to offline (don't remove from room)
                 room.players[playerIndex].status = "offline";
+                // Clean up message history for this player
+                cleanupMessageHistory(player.id);
 
                 console.log(`${player.name} went offline in room ${code}`);
 

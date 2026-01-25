@@ -88,6 +88,7 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
         const handleRoomReconnected = ({ room, player }) => {
             setCurrentPlayer(player);
             setPlayers(room.players);
+            setCurrentRound(room.round);
             setHostId(room.host);
             setMessages(room.messages || []);
             setGameStarted(room.gameStarted);
@@ -171,8 +172,16 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
             setPlayers(players);
         };
 
-        const handlePlayerStatusChanged = ({ players }) => {
+        const handlePlayerStatusChanged = ({ players, playerId, status }) => {
             setPlayers(players);
+            // If the current drawer went offline during drawing, show notification
+            if (playerId === currentDrawer && status === "offline" && gamePhase === "drawing") {
+                const notification = {
+                    type: 'updates',
+                    message: 'Drawer disconnected. Moving to next turn...',
+                };
+                setMessages(prev => [...prev, notification]);
+            }
         };
 
         socket.on("player-joined", handlePlayerJoined);
@@ -203,6 +212,7 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
             setRevealedWord("");
             setWordHint("");
             setSelectedWord(null);
+            setAiHint("");
         };
 
         // Word options (only for drawer)
@@ -685,7 +695,7 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                                         Round
                                         {" "}
                                         <span className="text-purple-400">
-                                            {currentRound == 0 ? 1 : currentRound}/{maxRounds}
+                                            {Math.max(1, currentRound)}/{maxRounds}
                                         </span>
                                     </p>
                                 </div>
@@ -968,7 +978,7 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                                             Round
                                             {" "}
                                             <span className="text-purple-400">
-                                                {currentRound == 0 ? 1 : currentRound}/{maxRounds}
+                                                {Math.max(1, currentRound)}/{maxRounds}
                                             </span>
                                         </p>
                                     </div>
@@ -1011,7 +1021,10 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                                                     <span className="text-yellow-400 font-semibold">Waiting</span>
                                             }
                                         </div>
-                                        <HintDialog hint={aiHint} timeLeft={timeLeft} />
+                                        {
+                                            !isCurrentPlayerDrawer &&
+                                            <HintDialog hint={aiHint} timeLeft={timeLeft} />
+                                        }
                                     </div>
                                 </div>
                             </div>
