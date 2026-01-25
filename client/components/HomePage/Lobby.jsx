@@ -22,14 +22,12 @@ export default function DrawRush() {
         });
 
         socket.on("room-created", ({ code, player }) => {
-            setLoading(false);
             sessionStorage.setItem("player", JSON.stringify(player));
             sessionStorage.setItem("roomId", code);
             router.push(`/room/${code}`);
         });
 
         socket.on("room-joined", ({ room, player }) => {
-            setLoading(false);
             sessionStorage.setItem("player", JSON.stringify(player));
             sessionStorage.setItem("roomId", room.code);
             router.push(`/room/${room.code}`);

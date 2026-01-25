@@ -161,13 +161,23 @@ npm start
    - Players take turns as the drawer
 4. **Game Settings**: Room host has the right to modify the game settings in game lobby.
 
+## 🏆 Scoring System
+
+The game uses a **time-based scoring system** that rewards fast and accurate guesses while also incentivizing good drawings.
+
+---
+
+### 🎯 Base Points
+
+```js
+DRAWER: 300
+FIRST_GUESS: 150
+OTHER_GUESS: 100
+```
+
 ## Game Constants
 
 - **Word Selection Time**: 10 seconds
-- **Points**:
-  - Drawer: 300 points per correct guess
-  - First Guesser: 150 points
-  - Other Guessers: 75 points each
 
 ## Key Technologies Explained
 

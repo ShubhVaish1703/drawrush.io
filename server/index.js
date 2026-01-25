@@ -36,9 +36,13 @@ const MESSAGE_TIME_WINDOW = 3000; // 3 seconds
 const rooms = new Map();
 const roomTimers = new Map(); // Store active timers
 
-// Generate random 6-character room code
+// Generate unique 6-character room code
 const generateRoomCode = () => {
-    return Math.random().toString(36).substring(2, 8).toUpperCase();
+    let code;
+    do {
+        code = Math.random().toString(36).substring(2, 8).toUpperCase();
+    } while (rooms.has(code)); // ensure uniqueness
+    return code;
 };
 
 // Create new room structure
@@ -888,6 +892,7 @@ io.on("connection", (socket) => {
         const msgData = {
             message,
             senderName,
+            senderId: player.id,
             time: Date.now(),
         };
         // Save message

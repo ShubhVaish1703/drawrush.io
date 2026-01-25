@@ -584,29 +584,34 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                 )}
 
             {/* Turn End Popup */}
-            {gamePhase === "turn-end" && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-                    <div className="bg-slate-800 p-8 rounded-xl border-2 border-pink-600 shadow-2xl max-w-md w-full mx-4">
-                        <h2 className="text-white text-2xl font-bold text-center mb-4">
-                            The word was: <span className="text-purple-600">{capitalizeFirst(revealedWord)}</span>
-                        </h2>
-                        {correctGuessers.length > 0 ? (
-                            <div>
-                                <p className="text-gray-300 text-center mb-4">Players who guessed correctly:</p>
-                                <ul className="space-y-2">
-                                    {correctGuessers.map((guesser, index) => (
-                                        <li key={index} className="text-white text-center bg-green-600/50 py-2 rounded">
-                                            🎉 {capitalizeFirst(guesser.playerName)}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        ) : (
-                            <p className="text-gray-400 text-center">Nobody guessed the word!</p>
-                        )}
+            {
+                gamePhase === "turn-end"
+                && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+                        <div className="bg-slate-800 p-8 rounded-xl border-2 border-pink-600 shadow-2xl max-w-md w-full mx-4">
+                            <h2 className="text-white text-2xl font-bold text-center mb-4">
+                                The word was: <span className="text-purple-600">{capitalizeFirst(revealedWord)}</span>
+                            </h2>
+                            {correctGuessers.length > 0 ? (
+                                <div>
+                                    <p className="text-gray-300 text-center mb-4">Players who guessed correctly:</p>
+                                    <ul className="space-y-2">
+                                        {correctGuessers.map((guesser, index) => (
+                                            <li key={index} className="text-white text-center bg-green-600/50 py-2 rounded">
+                                                🎉 {capitalizeFirst(guesser.playerName)}
+                                                <span className="text-sm">
+                                                    {guesser.playerId === currentPlayer?.id && " (You)"}
+                                                </span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            ) : (
+                                <p className="text-gray-400 text-center">Nobody guessed the word!</p>
+                            )}
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
 
             {/* Game End Popup */}
             {gamePhase === "game-end" && (
@@ -633,6 +638,9 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                                             {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}
                                         </span>
                                         {capitalizeFirst(player.name)}
+                                        <span className="text-sm">
+                                            {player.id === currentPlayer?.id && " (You)"}
+                                        </span>
                                     </span>
                                     <span className="text-white font-bold">{player.score} pts</span>
                                 </div>
@@ -877,7 +885,7 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                                             key={`${msg.time}-${index}`}
                                             SenderName={msg.senderName}
                                             message={msg.message}
-                                            isOwnMessage={msg.senderName === currentPlayer?.name}
+                                            isOwnMessage={msg.senderId === currentPlayer?.id}
                                         />
                                     )
                                 }
@@ -1111,7 +1119,7 @@ const GameLobby = ({ roomId }) => { // Added playerName prop
                                             key={`${msg.time}-${index}`}
                                             SenderName={msg.senderName}
                                             message={msg.message}
-                                            isOwnMessage={msg.senderName === currentPlayer?.name}
+                                            isOwnMessage={msg.senderId === currentPlayer?.id}
                                         />
                                     )
                                 }
