@@ -405,11 +405,15 @@ const checkGuess = (roomCode, playerId, guess, timeLeft) => {
     const timePenalty = Math.max(0, Math.ceil(elapsedSec / 2));
 
     if (room.correctGuessers.length === 0) {
+        // First correct guess
         player.score += Math.max(0, POINTS.FIRST_GUESS - timePenalty);
 
+        // Drawer bonus scales proportionally, not via the same flat subtraction
         const drawer = room.players.find(p => p.id === room.currentDrawer);
         if (drawer) {
-            drawer.score += Math.max(0, POINTS.DRAWER - timePenalty);
+            const roundDurationSec = room.settings.roundDuration;
+            const speedRatio = Math.max(0, Math.min(1, timeLeftSec / roundDurationSec)); // 0..1
+            drawer.score += Math.round(POINTS.DRAWER * speedRatio);
         }
     } else {
         player.score += Math.max(0, POINTS.OTHER_GUESS - timePenalty);
