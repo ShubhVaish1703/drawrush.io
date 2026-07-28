@@ -377,60 +377,63 @@ const endGame = (roomCode) => {
 // Check if guess is correct
 const checkGuess = (roomCode, playerId, guess, timeLeft) => {
     const room = rooms.get(roomCode);
-    if (!room || room.gamePhase !== "drawing") return;
+    if (!room || room.gamePhase !== "drawing") return false;
 
     const player = room.players.find(p => p.id === playerId);
-    if (!player) return;
+    if (!player) return false;
 
     // Drawer can't guess
-    if (playerId === room.currentDrawer) return;
+    if (playerId === room.currentDrawer) return false;
 
     // Already guessed correctly
-    if (player.hasGuessed) return;
+    if (player.hasGuessed) return false;
+    if (typeof guess !== "string") return false;
 
-    // Check if guess is correct (case-insensitive)
-    if (guess.toLowerCase().trim() === room.currentWord.toLowerCase()) {
-        player.hasGuessed = true;
+    const isCorrect = guess.toLowerCase().trim() === room.currentWord.toLowerCase();
+    if (!isCorrect) return false;
 
-        // Calculate time penalty (ensure it's non-negative)
-        const timePenalty = Math.max(0, Math.ceil(timeLeft / 2));
+    player.hasGuessed = true;
 
-        // Award points
-        if (room.correctGuessers.length === 0) {
-            // First correct guess
-            player.score += Math.max(0, POINTS.FIRST_GUESS - timePenalty);
+    // Server-authoritative timing — never trust a client-sent value
+    const roundDurationSec = room.settings.roundDuration;
+    const elapsedSec = Math.min(
+        roundDurationSec,
+        Math.max(0, (Date.now() - room.turnStartTime) / 1000)
+    );
 
-            // Award points to drawer if anyone guessed
-            const drawer = room.players.find(p => p.id === room.currentDrawer);
-            if (drawer) {
-                drawer.score += Math.max(0, POINTS.DRAWER - timePenalty);
-            }
+    // Penalty grows with how long the guess took — fast guesses cost less now
+    const timePenalty = Math.max(0, Math.ceil(elapsedSec / 2));
 
-        } else {
-            // Subsequent correct guesses
-            player.score += Math.max(0, POINTS.OTHER_GUESS - timePenalty);
+    if (room.correctGuessers.length === 0) {
+        player.score += Math.max(0, POINTS.FIRST_GUESS - timePenalty);
+
+        const drawer = room.players.find(p => p.id === room.currentDrawer);
+        if (drawer) {
+            drawer.score += Math.max(0, POINTS.DRAWER - timePenalty);
         }
-
-        room.correctGuessers.push({
-            playerId: player.id,
-            playerName: player.name,
-            time: Date.now() - room.turnStartTime
-        });
-
-        // Notify all players
-        io.to(roomCode).emit("correct-guess", {
-            playerId: player.id,
-            playerName: player.name,
-            players: room.players
-        });
-
-        // If all players guessed, end turn early
-        const nonDrawerPlayers = room.players.filter(p => p.id !== room.currentDrawer);
-        const allGuessed = nonDrawerPlayers.every(p => p.hasGuessed);
-        if (allGuessed) {
-            endTurn(roomCode);
-        }
+    } else {
+        player.score += Math.max(0, POINTS.OTHER_GUESS - timePenalty);
     }
+
+    room.correctGuessers.push({
+        playerId: player.id,
+        playerName: player.name,
+        time: Date.now() - room.turnStartTime
+    });
+
+    io.to(roomCode).emit("correct-guess", {
+        playerId: player.id,
+        playerName: player.name,
+        players: room.players
+    });
+
+    const nonDrawerPlayers = room.players.filter(p => p.id !== room.currentDrawer);
+    const allGuessed = nonDrawerPlayers.every(p => p.hasGuessed);
+    if (allGuessed) {
+        endTurn(roomCode);
+    }
+
+    return true;
 }
 // ==================== CHAT MESSAGE RATE LIMITING ====================
 // Map: userId -> timestamps[]
@@ -891,7 +894,7 @@ io.on("connection", (socket) => {
     });
 
     // handle chat messages
-    socket.on("send-message", ({ roomCode, message, senderName, timeStamp }) => {
+    socket.on("send-message", ({ roomCode, message, senderName }) => {
         const room = rooms.get(roomCode);
         if (!room) return;
 
@@ -900,15 +903,21 @@ io.on("connection", (socket) => {
 
         // Check if it's a guess during drawing phase
         if (room.gamePhase === "drawing") {
-            let timeLeft = room.settings.roundDuration - timeStamp;
-            if (timeStamp === 0) {
-                timeLeft = Math.floor(room.settings.roundDuration / 2);
-            }
+            // let timeLeft = room.settings.roundDuration - timeStamp;
+            // if (timeStamp === 0) {
+            //     timeLeft = Math.floor(room.settings.roundDuration / 2);
+            // }
 
-            checkGuess(roomCode, player.id, message, timeLeft);
+            // checkGuess(roomCode, player.id, message, timeLeft);
 
-            // Don't save guess messages to chat if they're correct
-            if (message.toLowerCase().trim() === room.currentWord.toLowerCase()) {
+            // // Don't save guess messages to chat if they're correct
+            // if (message.toLowerCase().trim() === room.currentWord.toLowerCase()) {
+            //     return;
+            // }
+            const wasCorrect = checkGuess(roomCode, player.id, message);
+
+            // Don't save guess messages to chat if they were the correct answer
+            if (wasCorrect) {
                 return;
             }
         }
