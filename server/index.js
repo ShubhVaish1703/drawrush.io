@@ -400,7 +400,7 @@ const checkGuess = (roomCode, playerId, guess, timeLeft) => {
         roundDurationSec,
         Math.max(0, (Date.now() - room.turnStartTime) / 1000)
     );
-
+    const timeLeftSec = Math.max(0, roundDurationSec - elapsedSec);
     // Penalty grows with how long the guess took — fast guesses cost less now
     const timePenalty = Math.max(0, Math.ceil(elapsedSec / 2));
 
